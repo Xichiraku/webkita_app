@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Masuk – Webkita</title>
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS (CDN, untuk prototipe. Untuk produksi Laravel: pakai Tailwind via Vite) -->
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '"Segoe UI"', 'Roboto', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#EFF5FF', 100: '#DCE8FD', 200: '#BFD5FB', 300: '#93B8F7', 400: '#5F94F0', 500: '#3B73E6', 600: '#2559CC', 700: '#1D46A5', 800: '#1B3A82', 900: '#1A3068', 950: '#111F45' },
+            ink: { 50: '#F4F7FB', 100: '#EAF0F7', 200: '#D9E2EE', 300: '#BFCBDC', 400: '#8E9DB5', 500: '#66758F', 600: '#4B5A73', 700: '#36445A', 800: '#232F42', 900: '#152033', 950: '#0C1524' },
+          },
+          boxShadow: {
+            soft: '0 10px 30px -12px rgba(26, 48, 104, 0.18), 0 2px 6px rgba(26, 48, 104, 0.06)',
+            lift: '0 28px 50px -22px rgba(26, 48, 104, 0.32), 0 4px 10px rgba(26, 48, 104, 0.06)',
+          },
+          keyframes: {
+            blob: { '0%,100%': { transform: 'translate(0,0) scale(1)' }, '50%': { transform: 'translate(20px,-16px) scale(1.08)' } },
+            rise: { from: { opacity: '0', transform: 'translateY(18px)' }, to: { opacity: '1', transform: 'none' } },
+            shake: { '0%,100%': { transform: 'translateX(0)' }, '20%,60%': { transform: 'translateX(-6px)' }, '40%,80%': { transform: 'translateX(6px)' } },
+          },
+          animation: {
+            blob: 'blob 14s ease-in-out infinite',
+            rise: 'rise .7s cubic-bezier(.22,1,.36,1) both',
+            shake: 'shake .4s ease-in-out',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body class="bg-white font-sans text-ink-900 antialiased selection:bg-brand-200">
+  <!-- latar dekoratif -->
+  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-white to-ink-50" aria-hidden="true">
+    <div class="absolute -left-24 top-10 h-80 w-80 rounded-full bg-brand-100 opacity-80 blur-3xl animate-blob"></div>
+    <div class="absolute -right-24 bottom-10 h-96 w-96 rounded-full bg-brand-200/60 blur-3xl animate-blob" style="animation-delay:-7s"></div>
+  </div>
+
+  <main class="flex min-h-screen flex-col items-center justify-center px-5 py-10">
+    <div class="w-full max-w-[29rem] animate-rise">
+      <a href="index.html" class="group mb-6 inline-flex items-center gap-2 rounded-md text-sm font-semibold text-ink-700 transition hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400">
+        <i data-lucide="arrow-left" class="h-4 w-4 transition-transform group-hover:-translate-x-1"></i> Kembali ke Beranda
+      </a>
+
+      <div class="rounded-3xl border border-ink-200 bg-white p-6 shadow-lift sm:p-9">
+        <div class="flex flex-col items-center text-center">
+          <span class="grid h-12 w-12 place-items-center rounded-2xl bg-brand-600 text-white shadow-soft"><i data-lucide="code-xml" class="h-6 w-6"></i></span>
+          <h1 class="mt-4 text-3xl font-extrabold tracking-tight text-ink-900">Masuk ke Akun</h1>
+          <p class="mt-1.5 text-ink-600">Pantau proyek website Anda di Project Workspace.</p>
+        </div>
+
+        <!-- Laravel: action="{{ route('login') }}" dan tambahkan @csrf -->
+        <form id="auth-form" class="mt-8 space-y-5" action="#" method="post" novalidate>
+        <div>
+          <label for="email" class="mb-1.5 block text-sm font-bold text-ink-800">Email <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+          <div class="relative">
+            <i data-lucide="mail" class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-500"></i>
+            <input id="email" name="email" type="email" placeholder="nama@email.com" autocomplete="email" required aria-describedby="email-err"
+              class="h-12 w-full rounded-xl border border-ink-300 bg-white pl-11 pr-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]" />
+          </div>
+          
+          <p id="email-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+        </div>
+        <div>
+          <label for="password" class="mb-1.5 block text-sm font-bold text-ink-800">Password <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+          <div class="relative">
+            <i data-lucide="lock" class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-500"></i>
+            <input id="password" name="password" type="password" placeholder="Masukkan password" autocomplete="current-password" required aria-describedby="password-err"
+              class="h-12 w-full rounded-xl border border-ink-300 bg-white pl-11 pr-12 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]" />
+          <button type="button" data-toggle="password" class="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-ink-500 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400" aria-label="Tampilkan password" aria-pressed="false">
+            <i data-lucide="eye" class="h-5 w-5" data-eye-on></i><i data-lucide="eye-off" class="hidden h-5 w-5" data-eye-off></i>
+          </button>
+          </div>
+          
+          <p id="password-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+        </div>
+        <div class="flex items-center justify-between">
+          <label class="flex cursor-pointer items-center gap-2 text-sm text-ink-700">
+            <input type="checkbox" name="remember" class="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-300" /> Ingat saya
+          </label>
+          <a href="lupa-password.html" class="rounded text-sm font-semibold text-brand-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Lupa password?</a>
+        </div>
+
+        <button id="submit-btn" type="submit" class="group relative flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-[15px] font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-lift focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 disabled:cursor-not-allowed disabled:opacity-80 disabled:hover:translate-y-0">
+          <svg id="spinner" class="hidden h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".3" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+          <span id="submit-label">Masuk</span>
+        </button>
+        </form>
+
+        <p class="mt-6 text-center text-sm text-ink-600">Belum punya akun? <a href="register.html" class="font-bold text-brand-700 hover:underline">Daftar sekarang</a></p>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script>
+    (function () {
+      lucide.createIcons({ attrs: { 'aria-hidden': 'true', focusable: 'false' } });
+
+      var form = document.getElementById('auth-form');
+      var btn = document.getElementById('submit-btn');
+
+      // Tampilkan / sembunyikan password
+      document.querySelectorAll('[data-toggle]').forEach(function (t) {
+        t.addEventListener('click', function () {
+          var input = document.getElementById(t.dataset.toggle);
+          var show = input.type === 'password';
+          input.type = show ? 'text' : 'password';
+          t.setAttribute('aria-pressed', String(show));
+          t.setAttribute('aria-label', show ? 'Sembunyikan password' : 'Tampilkan password');
+          t.querySelector('[data-eye-on]').classList.toggle('hidden', show);
+          t.querySelector('[data-eye-off]').classList.toggle('hidden', !show);
+        });
+      });
+
+      function setError(id, msg) {
+        var input = document.getElementById(id), err = document.getElementById(id + '-err');
+        if (!err) return;
+        if (msg) {
+          input.setAttribute('aria-invalid', 'true');
+          err.querySelector('span').textContent = msg;
+          err.classList.remove('hidden'); err.classList.add('flex');
+        } else {
+          input.removeAttribute('aria-invalid');
+          err.classList.add('hidden'); err.classList.remove('flex');
+        }
+      }
+
+      var rules = window.RULES = {};
+      rules.email = function (v) { if (!v) return 'Email wajib diisi.'; if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Format email tidak valid.'; return ''; };
+      rules.password = function (v) { return v ? '' : 'Password wajib diisi.'; };
+
+      function validate(id) { var m = rules[id] ? rules[id](document.getElementById(id).value.trim()) : ''; setError(id, m); return !m; }
+
+      Object.keys(rules).forEach(function (id) {
+        var el = document.getElementById(id);
+        el.addEventListener('blur', function () { if (el.value) validate(id); });
+        el.addEventListener('input', function () { if (el.hasAttribute('aria-invalid')) validate(id); });
+      });
+
+      form.addEventListener('submit', function (e) {
+        var firstBad = null;
+        Object.keys(rules).forEach(function (id) { if (!validate(id) && !firstBad) firstBad = id; });
+        var extra = window.extraCheck ? window.extraCheck() : true;
+        if (firstBad || !extra) {
+          e.preventDefault();
+          (firstBad ? document.getElementById(firstBad) : document.getElementById('terms')).focus();
+          var card = form.closest('.rounded-3xl'); card.classList.remove('animate-shake'); void card.offsetWidth; card.classList.add('animate-shake');
+          return;
+        }
+        btn.disabled = true;
+        document.getElementById('spinner').classList.remove('hidden');
+        document.getElementById('submit-label').textContent = 'Memproses…';
+        // Mode demo: aktif selama action="#". Di Laravel isi action dengan route, maka form terkirim normal.
+        if (form.getAttribute('action') === '#') {
+          e.preventDefault();
+          setTimeout(function () {
+            btn.disabled = false;
+            document.getElementById('spinner').classList.add('hidden');
+            document.getElementById('submit-label').textContent = btn.dataset.label;
+          }, 1400);
+        }
+      });
+      btn.dataset.label = document.getElementById('submit-label').textContent;
+    })();
+  </script>
+</body>
+</html>

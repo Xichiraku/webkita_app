@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { createSupabase } from '../lib/supabase'
 import { authMiddleware } from '../middleware/auth.middleware'
+import { errorStatus } from '../utils/http'
 import {
   createProject,
   deleteProject,
@@ -8,6 +9,7 @@ import {
   getMyProjects,
   getProjectById,
   getProjectsByUser,
+  setProjectPrice,
   updateProjectStatus,
 } from '../services/project.service'
 
@@ -78,10 +80,10 @@ projectRoute.patch('/:id/status', async (c) => {
     const id = Number(c.req.param('id'))
     const body = await c.req.json()
     const supabase = createSupabase(c.env.SUPABASE_URL, c.env.SUPABASE_SERVICE_ROLE_KEY)
-    const project = await updateProjectStatus(supabase, id, body.status)
+    const project = await updateProjectStatus(supabase, id, body.status, body.reason)
     return c.json({ status: 'success', message: 'Status project berhasil diupdate', data: project })
   } catch (err: any) {
-    return c.json({ status: 'error', message: err?.message || 'Gagal update status project' }, 500)
+    return c.json({ status: 'error', message: err?.message || 'Gagal update status project' }, errorStatus(err))
   }
 })
 
@@ -94,29 +96,10 @@ projectRoute.patch('/:id/price', async (c) => {
     const id = Number(c.req.param('id'))
     const body = await c.req.json()
     const supabase = createSupabase(c.env.SUPABASE_URL, c.env.SUPABASE_SERVICE_ROLE_KEY)
-
-    // Cek apakah harga sudah di-set
-    const { data: existing } = await supabase
-      .from('projects')
-      .select('plan_price_range')
-      .eq('id', id)
-      .single()
-
-    if (existing?.plan_price_range) {
-      return c.json({ status: 'error', message: 'Harga sudah ditetapkan dan tidak dapat diubah' }, 403)
-    }
-
-    const { data, error } = await supabase
-      .from('projects')
-      .update({ plan_price_range: body.plan_price_range, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select('*')
-      .single()
-
-    if (error) throw new Error(error.message)
+    const data = await setProjectPrice(supabase, id, body.plan_price_range)
     return c.json({ status: 'success', message: 'Harga berhasil diset', data })
   } catch (err: any) {
-    return c.json({ status: 'error', message: err?.message }, 500)
+    return c.json({ status: 'error', message: err?.message || 'Gagal mengatur harga' }, errorStatus(err))
   }
 })
 

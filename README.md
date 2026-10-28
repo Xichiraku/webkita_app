@@ -55,25 +55,51 @@ WebKita adalah aplikasi web dengan arsitektur **decoupled / REST API**, memisahk
 git clone https://github.com/RikardoAnju/webkita_App.git
 cd webkita_App
 
-### 2. Menjalankan Tanpa Docker (manual)
+### 2. Menjalankan lokal dengan data demo
 
-**Backend:**
-cd backend
-npm install
-npx wrangler dev
+Perlu Node.js 22+ dan Docker Desktop aktif. Jalankan dari root project:
 
-**Frontend:**
-cd frontend
-npm install
-npm run dev
+```powershell
+npx supabase start
+npx supabase db reset
+```
+
+`db reset` membuat schema lokal, paket harga demo, bucket lampiran, dan akun demo:
+
+- Email: `demo@webkita.local`
+- Password: `Demo1234!`
+
+Backend terminal pertama (`backend`): ambil `SERVICE_ROLE_KEY` dari output `npx supabase status -o env`, lalu jalankan:
+
+```powershell
+npx wrangler dev --ip 0.0.0.0 --port 8787 --var "SUPABASE_URL:http://127.0.0.1:54321" --var "SUPABASE_SERVICE_ROLE_KEY:<SERVICE_ROLE_KEY>" --var "JWT_SECRET:webkita-local-dev-secret-change-before-deploy-2026" --var "RESEND_API_KEY:local-demo-no-email" --var "MAIL_FROM_EMAIL:noreply@webkita.local" --var "MAIL_FROM_NAME:WebKita" --var "APP_URL:http://localhost:5173" --var "MIDTRANS_SERVER_KEY:local-demo-no-payments" --var "MIDTRANS_IS_PRODUCTION:false"
+```
+
+Frontend terminal kedua (`frontend`):
+
+```powershell
+npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+Buka `http://localhost:5173`. Email dan Midtrans hanya placeholder lokal; registrasi email dan pembayaran eksternal tidak aktif. Jangan gunakan JWT secret demo di production. Hentikan Supabase dengan `npx supabase stop`.
 
 ### 3. Menjalankan dengan Docker Compose
 
-docker-compose up --build
+Jalankan Supabase lokal terlebih dahulu seperti langkah sebelumnya. Salin
+`backend/.dev.vars.example` menjadi `backend/.dev.vars`, lalu isi
+`SUPABASE_SERVICE_ROLE_KEY` dengan nilai dari `npx supabase status -o env`.
+Untuk Docker, `SUPABASE_URL` harus tetap menggunakan
+`http://host.docker.internal:54321` agar container backend bisa mengakses
+Supabase yang berjalan di host Windows.
+
+```powershell
+docker compose up --build
+```
 
 Backend akan tersedia di `http://localhost:8787` dan frontend di `http://localhost:5173`.
-Backend butuh file `backend/.dev.vars` (lihat `backend/.gitignore` — file ini tidak
-ikut ter-commit) berisi `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, dll.
+Frontend mengakses API di `http://localhost:8787/api`. Email dan Midtrans pada
+file contoh hanya placeholder lokal; registrasi email dan pembayaran eksternal
+tidak aktif. Jangan gunakan secret demo di production.
 
 ### 4. Deploy ke Cloudflare Workers (Backend)
 cd backend

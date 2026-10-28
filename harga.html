@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paket Layanan – Webkita</title>
+  <meta name="description" content="Pilih paket pembuatan website Webkita yang sesuai budget Anda, dari Starter hingga Enterprise." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS (CDN, untuk prototipe. Untuk produksi Laravel: pakai Tailwind via Vite) -->
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '"Segoe UI"', 'Roboto', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#EFF5FF', 100: '#DCE8FD', 200: '#BFD5FB', 300: '#93B8F7', 400: '#5F94F0', 500: '#3B73E6', 600: '#2559CC', 700: '#1D46A5', 800: '#1B3A82', 900: '#1A3068', 950: '#111F45' },
+            ink: { 50: '#F4F7FB', 100: '#EAF0F7', 200: '#D9E2EE', 300: '#BFCBDC', 400: '#8E9DB5', 500: '#66758F', 600: '#4B5A73', 700: '#36445A', 800: '#232F42', 900: '#152033', 950: '#0C1524' },
+          },
+          boxShadow: {
+            soft: '0 10px 30px -12px rgba(26, 48, 104, 0.18), 0 2px 6px rgba(26, 48, 104, 0.06)',
+            lift: '0 22px 40px -18px rgba(26, 48, 104, 0.30), 0 4px 10px rgba(26, 48, 104, 0.06)',
+          },
+          keyframes: {
+            blob: { '0%,100%': { transform: 'translate(0,0) scale(1)' }, '50%': { transform: 'translate(20px,-16px) scale(1.08)' } },
+            rise: { from: { opacity: '0', transform: 'translateY(14px)' }, to: { opacity: '1', transform: 'none' } },
+            pop: { '0%': { transform: 'scale(.6)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
+          },
+          animation: {
+            blob: 'blob 14s ease-in-out infinite',
+            rise: 'rise .45s cubic-bezier(.22,1,.36,1) both',
+            pop: 'pop .35s cubic-bezier(.34,1.56,.64,1) both',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    .js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1), border-color .3s, box-shadow .3s; transition-delay: var(--d, 0ms), var(--d, 0ms), 0ms, 0ms; }
+    .js .reveal.is-visible { opacity: 1; transform: none; }
+
+    /* Slider budget (skala logaritmik, --p = posisi 0..1) */
+    .budget-range { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: transparent; outline: none; cursor: pointer; --p: 0; }
+    .budget-range::-webkit-slider-runnable-track {
+      height: 8px; border-radius: 999px;
+      background: linear-gradient(to right, #2559CC calc(14px + (100% - 28px) * var(--p)), #D9E2EE 0);
+    }
+    .budget-range::-moz-range-track { height: 8px; border-radius: 999px; background: #D9E2EE; }
+    .budget-range::-moz-range-progress { height: 8px; border-radius: 999px; background: #2559CC; }
+    .budget-range::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 28px; height: 28px; margin-top: -10px; border-radius: 50%;
+      background: #fff; border: 5px solid #2559CC; box-shadow: 0 4px 10px rgba(26,48,104,.28); transition: transform .15s, box-shadow .15s;
+    }
+    .budget-range::-moz-range-thumb {
+      width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 5px solid #2559CC; box-shadow: 0 4px 10px rgba(26,48,104,.28); transition: transform .15s;
+    }
+    .budget-range:active::-webkit-slider-thumb { transform: scale(1.15); }
+    .budget-range:active::-moz-range-thumb { transform: scale(1.15); }
+    .budget-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px rgba(95,148,240,.5), 0 4px 10px rgba(26,48,104,.28); }
+    .budget-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 5px rgba(95,148,240,.5), 0 4px 10px rgba(26,48,104,.28); }
+
+    dialog::backdrop { background: rgba(12, 21, 36, .55); backdrop-filter: blur(4px); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .js .reveal { opacity: 1; transform: none; transition: none; }
+      * { animation: none !important; }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+  <script>document.documentElement.classList.add('js');</script>
+</head>
+
+<body class="bg-ink-50 font-sans text-ink-900 antialiased selection:bg-brand-200">
+  <a href="#utama" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-white">Lewati ke konten utama</a>
+
+  <!-- ================= NAVBAR ================= -->
+  <header id="navbar" class="sticky top-0 z-40 border-b border-transparent bg-white/85 backdrop-blur transition-shadow duration-300">
+    <div class="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
+      <a href="index.html" class="flex items-center gap-2 rounded-md text-xl font-extrabold tracking-tight text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400">
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white"><i data-lucide="code-xml" class="h-[18px] w-[18px]"></i></span>
+        Webkita
+      </a>
+      <nav class="hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
+        <a href="index.html" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Beranda</a>
+        <a href="index.html#cara-kerja" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Cara Kerja</a>
+        <a href="harga.html" aria-current="page" class="rounded-lg bg-brand-50 px-3.5 py-2 text-sm font-bold text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Harga</a>
+        <a href="login.html" class="ml-3 rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Masuk</a>
+        <a href="register.html" class="ml-1 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-lift focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Daftar</a>
+      </nav>
+      <button id="menu-btn" type="button" class="grid h-11 w-11 place-items-center rounded-xl text-ink-800 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 md:hidden" aria-controls="mobile-menu" aria-expanded="false" aria-label="Buka menu">
+        <i data-lucide="menu" class="h-6 w-6"></i>
+      </button>
+    </div>
+    <div id="mobile-menu" class="hidden border-t border-ink-200 bg-white md:hidden">
+      <nav class="mx-auto flex max-w-7xl flex-col gap-1 px-5 py-4" aria-label="Navigasi seluler">
+        <a href="index.html" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Beranda</a>
+        <a href="index.html#cara-kerja" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Cara Kerja</a>
+        <a href="harga.html" aria-current="page" class="rounded-lg bg-brand-50 px-3 py-3 font-bold text-brand-700">Harga</a>
+        <div class="mt-2 grid grid-cols-2 gap-3">
+          <a href="login.html" class="rounded-xl border border-ink-300 px-4 py-3 text-center font-bold text-ink-800">Masuk</a>
+          <a href="register.html" class="rounded-xl bg-brand-600 px-4 py-3 text-center font-bold text-white">Daftar</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main id="utama" class="relative overflow-hidden">
+    <div class="pointer-events-none absolute -left-24 top-0 h-80 w-80 rounded-full bg-brand-100 opacity-70 blur-3xl animate-blob" aria-hidden="true"></div>
+    <div class="pointer-events-none absolute -right-24 top-72 h-80 w-80 rounded-full bg-brand-200/50 blur-3xl animate-blob" style="animation-delay:-7s" aria-hidden="true"></div>
+
+    <!-- ================= JUDUL ================= -->
+    <section class="relative mx-auto max-w-7xl px-5 pb-10 pt-14 text-center sm:px-8 lg:pt-20">
+      <h1 class="reveal text-4xl font-extrabold tracking-tight text-ink-900 sm:text-5xl">Paket Layanan Kami</h1>
+      <p class="reveal mx-auto mt-4 max-w-2xl text-lg text-ink-600" style="--d:100ms">Pilih paket yang sesuai dengan kebutuhan bisnis Anda. Dari UMKM hingga enterprise, kami siap membantu mewujudkan website impian Anda.</p>
+    </section>
+
+    <!-- ================= KALKULATOR BUDGET ================= -->
+    <section class="relative mx-auto max-w-3xl px-5 sm:px-8" aria-labelledby="budget-title">
+      <div class="reveal rounded-3xl border border-ink-200 bg-white p-6 shadow-soft sm:p-8" style="--d:150ms">
+        <div class="flex items-start gap-3">
+          <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700"><i data-lucide="wallet" class="h-5 w-5"></i></span>
+          <div>
+            <h2 id="budget-title" class="text-xl font-extrabold text-ink-900 sm:text-2xl">Berapa Budget Anda?</h2>
+            <p class="text-sm text-ink-600">Geser slider untuk melihat rekomendasi paket dan fitur.</p>
+          </div>
+        </div>
+
+        <div class="mt-7">
+          <div class="flex items-end justify-between gap-4">
+            <label for="budget" class="text-sm font-bold text-ink-700">Budget Anda</label>
+            <output for="budget" id="budget-value" class="whitespace-nowrap text-2xl font-extrabold tabular-nums tracking-tight text-ink-900 min-[420px]:text-3xl sm:text-4xl" aria-hidden="true">Rp 0</output>
+          </div>
+
+          <div class="relative mt-5">
+            <input id="budget" class="budget-range" type="range" min="0" max="1000" step="1" value="615" aria-describedby="budget-help" />
+            <!-- penanda batas paket -->
+            <div class="pointer-events-none absolute inset-x-0 top-[28px] h-3" id="ticks" aria-hidden="true"></div>
+          </div>
+          <div id="zones" class="relative mt-5 h-5 text-[11px] font-semibold text-ink-600 sm:text-xs" aria-hidden="true"></div>
+
+          <div class="mt-1 flex items-center justify-between text-xs text-ink-600">
+            <span>Rp 500 Ribu</span>
+            <span>Rp 100 Juta</span>
+          </div>
+          <p id="budget-help" class="sr-only">Gunakan tombol panah kiri dan kanan untuk mengubah budget. Rekomendasi paket diperbarui otomatis.</p>
+          <p id="budget-status" class="sr-only" role="status" aria-live="polite"></p>
+        </div>
+
+        <div class="mt-7 border-t border-ink-200 pt-6">
+          <div id="rec" class="animate-rise"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= DAFTAR PAKET ================= -->
+    <section class="relative mx-auto max-w-7xl px-5 pb-6 pt-14 sm:px-8" aria-label="Daftar paket">
+      <noscript><p class="rounded-xl bg-white p-4 text-center text-ink-700">Aktifkan JavaScript untuk melihat daftar paket.</p></noscript>
+      <div id="packages" class="grid items-stretch gap-6 pt-3 sm:grid-cols-2 lg:grid-cols-4"></div>
+    </section>
+
+    <!-- ================= TIPS ================= -->
+    <section class="relative mx-auto max-w-7xl px-5 py-14 sm:px-8">
+      <div class="reveal rounded-3xl bg-brand-50 p-7 ring-1 ring-brand-100 sm:p-10">
+        <h2 class="text-2xl font-extrabold tracking-tight text-ink-900">Tips Menentukan Budget</h2>
+        <div class="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-white text-brand-700 shadow-sm"><i data-lucide="clipboard-check" class="h-5 w-5"></i></span>
+            <h3 class="mt-4 font-bold text-ink-900">Pertimbangkan Kebutuhan</h3>
+            <p class="mt-1.5 text-sm leading-relaxed text-ink-600">Apakah Anda butuh website sederhana atau platform kompleks dengan banyak fitur?</p>
+          </div>
+          <div>
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-white text-brand-700 shadow-sm"><i data-lucide="timer" class="h-5 w-5"></i></span>
+            <h3 class="mt-4 font-bold text-ink-900">Timeline Proyek</h3>
+            <p class="mt-1.5 text-sm leading-relaxed text-ink-600">Proyek mendesak biasanya membutuhkan budget lebih tinggi.</p>
+          </div>
+          <div>
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-white text-brand-700 shadow-sm"><i data-lucide="life-buoy" class="h-5 w-5"></i></span>
+            <h3 class="mt-4 font-bold text-ink-900">Maintenance &amp; Support</h3>
+            <p class="mt-1.5 text-sm leading-relaxed text-ink-600">Alokasikan budget untuk pemeliharaan website setelah launching.</p>
+          </div>
+          <div>
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-white text-brand-700 shadow-sm"><i data-lucide="trending-up" class="h-5 w-5"></i></span>
+            <h3 class="mt-4 font-bold text-ink-900">Skalabilitas</h3>
+            <p class="mt-1.5 text-sm leading-relaxed text-ink-600">Pikirkan pertumbuhan bisnis untuk 1-2 tahun ke depan.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CTA ================= -->
+    <section class="relative mx-auto max-w-7xl px-5 pb-20 sm:px-8">
+      <div class="reveal relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-700 to-brand-900 px-6 py-14 text-center shadow-lift sm:px-12 lg:py-16">
+        <div class="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-brand-400/30 blur-3xl animate-blob" aria-hidden="true"></div>
+        <div class="relative">
+          <h2 class="text-3xl font-extrabold tracking-tight text-white">Butuh Konsultasi Paket?</h2>
+          <p class="mx-auto mt-3 max-w-2xl text-lg text-brand-100">Tim kami siap membantu Anda menemukan solusi terbaik untuk kebutuhan bisnis Anda. Hubungi kami untuk konsultasi gratis!</p>
+          <!-- Ganti 62XXXXXXXXXXX dengan nomor WhatsApp Webkita (format 62..., tanpa + atau 0 di depan) -->
+          <a href="https://wa.me/62XXXXXXXXXXX?text=Halo%20Webkita%2C%20saya%20ingin%20konsultasi%20paket." target="_blank" rel="noopener noreferrer" class="group mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 font-bold text-brand-700 shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-50 hover:shadow-lift focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            <i data-lucide="message-circle" class="h-5 w-5"></i> Hubungi Kami di WhatsApp
+            <i data-lucide="arrow-right" class="h-5 w-5 transition-transform group-hover:translate-x-1"></i>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= DETAIL PAKET (dialog) ================= -->
+  <dialog id="detail" class="m-auto w-[min(92vw,30rem)] rounded-3xl bg-white p-0 text-ink-900 shadow-lift open:animate-rise" aria-labelledby="detail-title">
+    <div class="p-6 sm:p-8">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-sm font-bold text-brand-700">Detail paket</p>
+          <h2 id="detail-title" class="text-2xl font-extrabold tracking-tight"></h2>
+          <p id="detail-range" class="mt-1 text-ink-600"></p>
+        </div>
+        <button type="button" id="detail-close" class="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-ink-600 transition hover:bg-ink-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400" aria-label="Tutup detail">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+      </div>
+      <h3 class="mt-6 text-sm font-bold uppercase tracking-wide text-ink-600">Yang Anda dapatkan</h3>
+      <ul id="detail-features" class="mt-3 space-y-2.5"></ul>
+      <p class="mt-6 rounded-xl bg-ink-50 p-3.5 text-sm text-ink-600">Rentang harga adalah estimasi. Harga final ditentukan setelah kebutuhan proyek Anda dikonfirmasi.</p>
+      <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+        <a id="detail-order" href="register.html" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-bold text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Pesan Paket Ini</a>
+        <button type="button" id="detail-close-2" class="inline-flex items-center justify-center rounded-xl border-2 border-ink-200 px-5 py-3 font-bold text-ink-800 transition hover:border-brand-400 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Tutup</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="border-t border-ink-200 bg-white">
+    <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8">
+      <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+        <div>
+          <a href="index.html" class="flex items-center gap-2 text-xl font-extrabold tracking-tight text-ink-900">
+            <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white"><i data-lucide="code-xml" class="h-[18px] w-[18px]"></i></span>
+            Webkita
+          </a>
+          <p class="mt-4 max-w-[15rem] text-sm leading-relaxed text-ink-600">Hubungkan bisnis Anda dengan developer terbaik.</p>
+          <a href="#" aria-label="Webkita di GitHub" class="mt-4 inline-grid h-10 w-10 place-items-center rounded-full text-ink-600 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="github" class="h-5 w-5"></i></a>
+        </div>
+        <nav aria-label="Perusahaan">
+          <h3 class="text-sm font-bold text-ink-900">Perusahaan</h3>
+          <ul class="mt-4 space-y-3 text-sm text-ink-600">
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Tentang Kami</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Karir</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Blog</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Kontak</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Layanan">
+          <h3 class="text-sm font-bold text-ink-900">Layanan</h3>
+          <ul class="mt-4 space-y-3 text-sm text-ink-600">
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Developer</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">E-commerce</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Design</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Konsultasi</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Dukungan">
+          <h3 class="text-sm font-bold text-ink-900">Dukungan</h3>
+          <ul class="mt-4 space-y-3 text-sm text-ink-600">
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Pusat Bantuan</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">FAQ</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Syarat &amp; Ketentuan</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Kebijakan Privasi</a></li>
+          </ul>
+        </nav>
+        <div>
+          <h3 class="text-sm font-bold text-ink-900">Newsletter</h3>
+          <p class="mt-4 text-sm text-ink-600">Dapatkan update terbaru dari kami.</p>
+          <form class="mt-4 flex" action="#" method="post" onsubmit="return false">
+            <label for="newsletter-email" class="sr-only">Email Anda</label>
+            <input id="newsletter-email" type="email" required placeholder="Email Anda" autocomplete="email" class="min-w-0 flex-1 rounded-l-xl border border-r-0 border-ink-300 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-500 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-300" />
+            <button type="submit" class="rounded-r-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Kirim</button>
+          </form>
+        </div>
+      </div>
+      <div class="mt-12 border-t border-ink-200 pt-6 text-center text-sm text-ink-600">&copy; 2026 Webkita. Semua hak dilindungi.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script>
+    (function () {
+      var ICON_ATTRS = { 'aria-hidden': 'true', focusable: 'false' };
+      function icons() { if (window.lucide) lucide.createIcons({ attrs: ICON_ATTRS }); }
+
+      /* ====== DATA PAKET ======
+         Di Laravel, data ini bisa dirender dari tabel paket (dikelola admin) lewat @json($packages). */
+      var PACKAGES = [
+        { id: 'starter', name: 'Starter', min: 500000, max: 1500000, bar: 'bg-brand-300',
+          features: ['Optimasi SEO dasar', 'Hingga 5 halaman', 'Desain responsif'] },
+        { id: 'professional', name: 'Professional', min: 1500000, max: 5000000, bar: 'bg-brand-500',
+          features: ['Optimasi SEO lanjutan', 'CMS dan integrasi', 'Hingga 15 halaman', 'Semua fitur Starter'] },
+        { id: 'business', name: 'Business', min: 5000000, max: 15000000, bar: 'bg-brand-700',
+          features: ['Dukungan prioritas', 'Integrasi pihak ketiga', 'Halaman dan fitur kustom', 'Semua fitur Professional'] },
+        { id: 'enterprise', name: 'Enterprise', min: 15000000, max: null, bar: 'bg-brand-950',
+          features: ['Konsultasi teknis', 'Dukungan prioritas', 'Integrasi sistem enterprise', 'Solusi dan desain kustom'] }
+      ];
+
+      var MIN = 500000, MAX = 100000000, STEPS = 1000;
+      var LOGR = Math.log(MAX / MIN);
+
+      function rp(n) { return 'Rp ' + n.toLocaleString('id-ID'); }
+      function rangeText(p) { return p.max ? rp(p.min) + ' – ' + rp(p.max) : 'Mulai ' + rp(p.min); }
+      function pos(v) { return Math.log(v / MIN) / LOGR; }              // nilai -> 0..1
+      function valueAt(t) {                                              // 0..STEPS -> rupiah (dibulatkan)
+        var v = MIN * Math.exp(LOGR * (t / STEPS));
+        var step = v < 5e6 ? 1e5 : (v < 25e6 ? 5e5 : 1e6);
+        return Math.min(MAX, Math.max(MIN, Math.round(v / step) * step));
+      }
+      function pkgFor(v) {
+        for (var i = PACKAGES.length - 1; i >= 0; i--) if (v >= PACKAGES[i].min) return PACKAGES[i];
+        return PACKAGES[0];
+      }
+      function featureLi(f, cls) {
+        return '<li class="flex items-start gap-2.5 ' + cls + '"><i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0 text-brand-600"></i><span>' + f + '</span></li>';
+      }
+
+      var slider = document.getElementById('budget');
+      var out = document.getElementById('budget-value');
+      var rec = document.getElementById('rec');
+      var status = document.getElementById('budget-status');
+      var grid = document.getElementById('packages');
+      var current = null;
+
+      /* ----- penanda batas paket & label zona di bawah slider ----- */
+      var ticks = document.getElementById('ticks'), zones = document.getElementById('zones');
+      var calcLeft = function (p) { return 'calc(14px + (100% - 28px) * ' + p.toFixed(4) + ')'; };
+      var th = PACKAGES.slice(1).map(function (p) { return pos(p.min); });
+      th.forEach(function (p) {
+        ticks.insertAdjacentHTML('beforeend', '<span class="absolute top-0 h-2.5 w-px bg-ink-300" style="left:' + calcLeft(p) + '"></span>');
+      });
+      var edges = [0].concat(th, [1]);
+      PACKAGES.forEach(function (p, i) {
+        var c = (edges[i] + edges[i + 1]) / 2;
+        zones.insertAdjacentHTML('beforeend', '<span data-zone="' + p.id + '" class="absolute -translate-x-1/2 whitespace-nowrap transition-colors" style="left:' + calcLeft(c) + '">' + (p.id === 'professional' ? '<span class="sm:hidden">Pro</span><span class="hidden sm:inline">' + p.name + '</span>' : p.name) + '</span>');
+      });
+
+      /* ----- kartu paket ----- */
+      grid.innerHTML = PACKAGES.map(function (p, i) {
+        return '<article data-id="' + p.id + '" class="reveal relative flex flex-col rounded-3xl border border-ink-200 bg-white p-6 shadow-soft transition duration-300" style="--d:' + (i * 80) + 'ms">' +
+          '<span data-badge class="pointer-events-none absolute -top-3 left-6 hidden items-center gap-1.5 rounded-full bg-brand-600 px-3 py-1 text-xs font-bold text-white shadow-soft animate-pop"><i data-lucide="sparkles" class="h-3.5 w-3.5"></i>Rekomendasi Anda</span>' +
+          '<div class="h-1.5 rounded-full ' + p.bar + '"></div>' +
+          '<h3 class="mt-5 text-xl font-extrabold text-ink-900">' + p.name + '</h3>' +
+          '<p class="mt-1 text-sm font-semibold text-ink-600">' + rangeText(p) + '</p>' +
+          '<ul class="mt-5 space-y-2.5 text-sm text-ink-700">' + p.features.map(function (f) { return featureLi(f, ''); }).join('') + '</ul>' +
+          '<button type="button" data-detail="' + p.id + '" class="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-ink-200 bg-white px-4 py-2.5 text-sm font-bold text-ink-800 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400" >Lihat Detail<span class="sr-only"> paket ' + p.name + '</span></button>' +
+          '</article>';
+      }).join('');
+      // beri jarak antara daftar fitur dan tombol agar tombol selalu rata di bawah
+      grid.querySelectorAll('article > ul').forEach(function (ul) { ul.style.marginBottom = '1.5rem'; });
+
+      /* ----- render sesuai nilai slider ----- */
+      function update(announce) {
+        var t = +slider.value, v = valueAt(t), p = pkgFor(v);
+        slider.style.setProperty('--p', (t / STEPS).toFixed(4));
+        out.textContent = rp(v) + (v >= MAX ? '+' : '');
+        slider.setAttribute('aria-valuetext', rp(v) + ', paket ' + p.name);
+
+        if (!current || current.id !== p.id) {
+          current = p;
+          rec.classList.remove('animate-rise'); void rec.offsetWidth; rec.classList.add('animate-rise');
+          rec.innerHTML =
+            '<div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">' +
+              '<p class="flex items-center gap-2 font-bold text-ink-900"><span class="h-3 w-3 rounded-full ' + p.bar + '"></span>Paket Rekomendasi: ' + p.name + '</p>' +
+              '<p class="text-sm font-semibold text-ink-600">' + rangeText(p) + '</p>' +
+            '</div>' +
+            '<p class="mt-5 flex items-center gap-2 font-extrabold text-ink-900"><span class="grid h-7 w-7 place-items-center rounded-full bg-brand-100 text-brand-700"><i data-lucide="check" class="h-4 w-4"></i></span>Yang Anda Dapatkan:</p>' +
+            '<ul class="mt-3 grid gap-2.5 text-sm text-ink-700 sm:grid-cols-2">' + p.features.map(function (f) { return featureLi(f, ''); }).join('') + '</ul>' +
+            '<div class="mt-6 flex flex-col gap-3 sm:flex-row">' +
+              '<a href="register.html" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Pesan Paket ' + p.name + '</a>' +
+              '<button type="button" data-detail="' + p.id + '" class="inline-flex items-center justify-center rounded-xl border-2 border-ink-200 px-5 py-3 font-bold text-ink-800 transition hover:border-brand-400 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Lihat Detail</button>' +
+            '</div>';
+
+          grid.querySelectorAll('article').forEach(function (a) {
+            var on = a.dataset.id === p.id;
+            a.classList.toggle('border-brand-500', on);
+            a.classList.toggle('ring-2', on);
+            a.classList.toggle('ring-brand-200', on);
+            a.classList.toggle('shadow-lift', on);
+            a.classList.toggle('border-ink-200', !on);
+            var b = a.querySelector('[data-badge]');
+            b.classList.toggle('hidden', !on); b.classList.toggle('inline-flex', on);
+          });
+          zones.querySelectorAll('[data-zone]').forEach(function (z) {
+            var on = z.dataset.zone === p.id;
+            z.classList.toggle('text-brand-700', on); z.classList.toggle('font-extrabold', on);
+          });
+          icons();
+        }
+        if (announce) status.textContent = 'Paket rekomendasi: ' + p.name + ', ' + rangeText(p);
+      }
+
+      slider.value = Math.round(STEPS * pos(13000000));   // nilai awal Rp 13.000.000
+      slider.addEventListener('input', function () { update(false); });
+      slider.addEventListener('change', function () { update(true); });
+      update(false);
+
+      /* ----- dialog detail ----- */
+      var dlg = document.getElementById('detail');
+      function openDetail(id) {
+        var p = PACKAGES.filter(function (x) { return x.id === id; })[0];
+        document.getElementById('detail-title').textContent = 'Paket ' + p.name;
+        document.getElementById('detail-range').textContent = rangeText(p);
+        document.getElementById('detail-features').innerHTML = p.features.map(function (f) { return featureLi(f, 'text-ink-800'); }).join('');
+        icons();
+        if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+        document.documentElement.style.overflow = 'hidden';
+      }
+      function closeDetail() { dlg.close(); }
+      dlg.addEventListener('close', function () { document.documentElement.style.overflow = ''; });
+      dlg.addEventListener('click', function (e) { if (e.target === dlg) closeDetail(); });
+      document.getElementById('detail-close').addEventListener('click', closeDetail);
+      document.getElementById('detail-close-2').addEventListener('click', closeDetail);
+      document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-detail]'); if (b) openDetail(b.dataset.detail);
+      });
+
+      icons();
+
+      /* ----- navbar ----- */
+      var nav = document.getElementById('navbar');
+      function onScroll() {
+        var s = window.scrollY > 8;
+        nav.classList.toggle('shadow-soft', s); nav.classList.toggle('border-ink-200', s); nav.classList.toggle('border-transparent', !s);
+      }
+      onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+
+      var btn = document.getElementById('menu-btn'), menu = document.getElementById('mobile-menu');
+      function setMenu(open) {
+        menu.classList.toggle('hidden', !open);
+        btn.setAttribute('aria-expanded', String(open));
+        btn.setAttribute('aria-label', open ? 'Tutup menu' : 'Buka menu');
+        btn.innerHTML = '<i data-lucide="' + (open ? 'x' : 'menu') + '" class="h-6 w-6"></i>'; icons();
+      }
+      btn.addEventListener('click', function () { setMenu(btn.getAttribute('aria-expanded') !== 'true'); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+
+      /* ----- animasi muncul saat scroll ----- */
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('is-visible'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('is-visible'); io.unobserve(en.target); } });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+</body>
+</html>

@@ -1,186 +1,128 @@
-import React, { useState } from "react";
-import { ArrowLeft, AlertCircle, CheckCircle, Lock, Eye, EyeOff } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Circle, CircleAlert, CircleCheck, KeyRound, ShieldCheck } from "lucide-react";
 import { useUser } from "../../provider/user_provider";
+import { ButtonSpinner } from "../../components/ui/Spinner";
+import ResetShell, { StepHeader } from "./ResetShell";
+import PasswordInput from "./PasswordInput";
+import { BTN_ARIA_OFF, BTN_PRIMARY } from "../../utils/ui";
+
+const RULES = [
+  { key: "len", label: "Minimal 8 karakter", test: (v) => v.length >= 8 },
+  { key: "mix", label: "Mengandung huruf dan angka", test: (v) => /[A-Za-z]/.test(v) && /\d/.test(v) },
+];
 
 function ResetPassword({ resetToken, email, onBackToVerify, onSuccess }) {
   const { resetPassword } = useUser();
+  const cardRef = useRef(null);
 
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showNewPw, setShowNewPw] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [pw, setPw] = useState("");
+  const [pc, setPc] = useState("");
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const isPasswordValid = newPassword.length >= 8;
-  const isPasswordMatch = newPassword === confirmPassword && confirmPassword.length > 0;
-  const canSubmit = isPasswordValid && isPasswordMatch;
+  // Tanpa token (mis. halaman di-refresh) alur harus diulang dari OTP
+  useEffect(() => { if (!resetToken && !success) onBackToVerify?.(); }, [resetToken, success, onBackToVerify]);
+
+  const ok = Object.fromEntries(RULES.map((r) => [r.key, r.test(pw)]));
+  const rulesOk = RULES.every((r) => ok[r.key]);
+  const match = pc.length > 0 && pw === pc;
+  const canSubmit = rulesOk && match && !loading;
+
+  const shake = () => {
+    const el = cardRef.current; if (!el) return;
+    el.classList.remove("animate-shake"); void el.offsetWidth; el.classList.add("animate-shake");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!canSubmit) return;
-
-    setLoading(true);
-    setError("");
-
-    const result = await resetPassword({ resetToken, newPassword });
-
-    setLoading(false);
-
-    if (!result.success) {
-      setError(result.message || "Gagal mereset password. Silakan coba lagi.");
+    if (loading) return;
+    const errs = {
+      password: rulesOk ? "" : "Password belum memenuhi syarat.",
+      password_confirmation: !pc ? "Konfirmasi password wajib diisi." : match ? "" : "Konfirmasi password tidak sama.",
+    };
+    setErrors(errs);
+    if (errs.password || errs.password_confirmation) {
+      shake();
+      document.getElementById(errs.password ? "password" : "password_confirmation")?.focus();
       return;
     }
 
+    setLoading(true);
+    setServerError("");
+    const result = await resetPassword({ resetToken, newPassword: pw });
+    setLoading(false);
+    if (!result.success) {
+      setServerError(result.message || "Gagal mereset password. Silakan coba lagi.");
+      shake();
+      return;
+    }
     setSuccess(true);
   };
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 text-center">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-500" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Berhasil Diubah</h2>
-            <p className="text-gray-500 text-sm mb-8">
-              Password akun <span className="font-semibold text-gray-700">{email}</span> telah
-              berhasil diperbarui. Silakan login dengan password baru Anda.
-            </p>
-            <button
-              onClick={onSuccess}
-              className="w-full bg-gray-900 text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition shadow-md active:scale-[0.98]"
-            >
-              Ke Halaman Login
-            </button>
-          </div>
+      <ResetShell current={3} onBack={onSuccess} cardRef={cardRef}>
+        <div className="text-center">
+          <StepHeader icon={ShieldCheck} tone="success" title="Password Berhasil Diubah">
+            Demi keamanan, silakan masuk kembali dengan password baru Anda.
+          </StepHeader>
+          <button type="button" onClick={onSuccess} className={`mt-7 h-12 w-full text-[15px] ${BTN_PRIMARY}`}>Masuk ke Akun</button>
         </div>
-      </div>
+      </ResetShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full space-y-8">
-        <button
-          onClick={onBackToVerify}
-          className="inline-flex items-center text-gray-600 hover:text-gray-900 transition font-medium"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
+    <ResetShell current={2} onBack={onBackToVerify} backLabel="Kembali" cardRef={cardRef}>
+      <StepHeader icon={KeyRound} title="Buat Password Baru">
+        Kode terverifikasi. Buat password baru untuk akun{" "}
+        <b className="[overflow-wrap:anywhere] text-ink-900">{email}</b>.
+      </StepHeader>
+
+      <form className="mt-7 space-y-5" onSubmit={handleSubmit} noValidate>
+        {serverError && (
+          <p className="flex items-start gap-2.5 rounded-xl bg-[#FEF2F2] p-3.5 text-sm font-semibold text-[#7F1D1D]" role="alert">
+            <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#B91C1C]" aria-hidden="true" /> {serverError}
+          </p>
+        )}
+
+        <PasswordInput
+          id="password"
+          label="Password baru"
+          autoComplete="new-password"
+          value={pw}
+          disabled={loading}
+          error={errors.password}
+          onChange={(e) => { setPw(e.target.value); setErrors((x) => ({ ...x, password: "" })); setServerError(""); }}
+        />
+
+        <ul className="space-y-1.5 text-sm" aria-label="Syarat password">
+          {RULES.map((r) => (
+            <li key={r.key} className={`flex items-center gap-2 ${ok[r.key] ? "font-semibold text-[#15803D]" : "text-ink-600"}`}>
+              {ok[r.key] ? <CircleCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> : <Circle className="h-4 w-4 shrink-0" aria-hidden="true" />}
+              <span>{r.label}</span>
+            </li>
+          ))}
+        </ul>
+
+        <PasswordInput
+          id="password_confirmation"
+          label="Konfirmasi password"
+          autoComplete="new-password"
+          value={pc}
+          disabled={loading}
+          error={errors.password_confirmation || (pc && !match ? "Konfirmasi password tidak sama." : "")}
+          onChange={(e) => { setPc(e.target.value); setErrors((x) => ({ ...x, password_confirmation: "" })); setServerError(""); }}
+        />
+
+        <button type="submit" aria-disabled={!canSubmit} className={`h-12 w-full text-[15px] ${BTN_PRIMARY}${BTN_ARIA_OFF}`}>
+          {loading && <ButtonSpinner />}
+          {loading ? "Menyimpan…" : "Simpan Password Baru"}
         </button>
-
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-          <div className="flex justify-center mb-6">
-            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
-              <Lock className="w-6 h-6 text-gray-700" />
-            </div>
-          </div>
-
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Reset Password</h2>
-            <p className="text-gray-500 text-sm">
-              Buat password baru untuk akun{" "}
-              <span className="font-semibold text-gray-700">{email}</span>
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-              <AlertCircle className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Password Baru <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showNewPw ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => { setNewPassword(e.target.value); if (error) setError(""); }}
-                  disabled={loading}
-                  placeholder="Minimal 8 karakter"
-                  className={`block w-full px-4 pr-10 py-3 border rounded-lg focus:ring-2 transition disabled:bg-gray-100 outline-none ${
-                    newPassword.length === 0
-                      ? "border-gray-300 focus:ring-blue-500"
-                      : isPasswordValid
-                      ? "border-green-400 focus:ring-green-500"
-                      : "border-red-400 focus:ring-red-500"
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPw((v) => !v)}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  {showNewPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {newPassword.length > 0 && !isPasswordValid && (
-                <p className="mt-1.5 text-xs text-red-600">Password minimal 8 karakter.</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Konfirmasi Password <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showConfirmPw ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => { setConfirmPassword(e.target.value); if (error) setError(""); }}
-                  disabled={loading}
-                  placeholder="Ulangi password baru"
-                  className={`block w-full px-4 pr-10 py-3 border rounded-lg focus:ring-2 transition disabled:bg-gray-100 outline-none ${
-                    confirmPassword.length === 0
-                      ? "border-gray-300 focus:ring-blue-500"
-                      : isPasswordMatch
-                      ? "border-green-400 focus:ring-green-500"
-                      : "border-red-400 focus:ring-red-500"
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPw((v) => !v)}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {confirmPassword.length > 0 && !isPasswordMatch && (
-                <p className="mt-1.5 text-xs text-red-600">Password tidak cocok.</p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !canSubmit}
-              className="w-full bg-gray-900 text-white py-4 rounded-lg font-bold hover:bg-gray-800 transition shadow-lg active:scale-[0.98] disabled:bg-gray-400 disabled:scale-100 flex items-center justify-center"
-            >
-              {loading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Memproses...
-                </span>
-              ) : (
-                "Reset Password"
-              )}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+      </form>
+    </ResetShell>
   );
 }
 

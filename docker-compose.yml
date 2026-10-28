@@ -22,6 +22,6 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8787
+      - VITE_API_URL=http://localhost:8787/api
     depends_on:
       - backend

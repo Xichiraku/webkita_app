@@ -1,183 +1,184 @@
-import React, { useState } from "react";
-import { Menu, X, LogOut, Settings, User } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { LogOut, Menu, User, X } from "lucide-react";
 import { useUser } from "../provider/user_provider";
+import Logo from "./ui/Logo";
 
-export default function Navbar({
-  onLoginClick,
-  onRegisterClick,
-  onCaraKerjaClick,
-  onNavigateHome,
-  onHargaClick,
-  onOrderanClick,
-  onProfileClick,
-}) {
+const linkBase = "rounded-lg px-3.5 py-2 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400";
+const linkIdle = "font-semibold text-ink-700 hover:bg-brand-50 hover:text-brand-700";
+const linkOn = "bg-brand-50 font-bold text-brand-700";
+
+export default function Navbar() {
   const { user, logoutUser } = useUser();
+  const navigate = useNavigate();
+  const { pathname, hash } = useLocation();
   const isLoggedIn = !!user;
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const wrapRef = useRef(null);
+  const menuBtnRef = useRef(null);
 
-  const handleLogout = () => {
-    logoutUser();
-    setProfileMenuOpen(false);
-    setMobileMenuOpen(false);
+  // Bayangan navbar saat scroll
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Tutup menu saat pindah halaman
+  useEffect(() => { setMobileOpen(false); setMenuOpen(false); }, [pathname, hash]);
+
+  // Klik di luar / Esc menutup dropdown akun & menu mobile
+  useEffect(() => {
+    const onDown = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setMenuOpen(false); };
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      setMobileOpen(false);
+      setMenuOpen((o) => { if (o) menuBtnRef.current?.focus(); return false; });
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, []);
+
+  const goCaraKerja = () => {
+    if (pathname === "/") {
+      document.getElementById("cara-kerja")?.scrollIntoView({ behavior: "smooth" });
+      window.history.replaceState(null, "", "/#cara-kerja");
+    } else {
+      navigate("/#cara-kerja");
+    }
   };
 
-  const handleProfile = () => {
-    setProfileMenuOpen(false);
-    setMobileMenuOpen(false);
-    if (onProfileClick) onProfileClick();
+  const links = [
+    { name: "Beranda", onClick: () => { navigate("/"); window.scrollTo({ top: 0 }); }, active: pathname === "/" && hash !== "#cara-kerja" },
+    { name: "Cara Kerja", onClick: goCaraKerja, active: pathname === "/" && hash === "#cara-kerja" },
+    ...(isLoggedIn ? [{ name: "Orderan", onClick: () => navigate("/orderan"), active: pathname.startsWith("/orderan") }] : []),
+    { name: "Harga", onClick: () => navigate("/harga"), active: pathname.startsWith("/harga") },
+  ];
+
+  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.username || "Pengguna";
+
+  const handleLogout = async () => {
+    setMenuOpen(false);
+    await logoutUser();
+    navigate("/login");
   };
 
-  const navLinks = [
-    { name: "Beranda", onClick: onNavigateHome || (() => (window.location.href = "/")) },
-    { name: "Cara Kerja", onClick: onCaraKerjaClick || (() => {}) },
-    { name: "Harga", onClick: onHargaClick || (() => {}) },
-  ];
-
-  const loggedInNavLinks = [
-    { name: "Beranda", onClick: onNavigateHome || (() => (window.location.href = "/")) },
-    { name: "Cara Kerja", onClick: onCaraKerjaClick || (() => {}) },
-    { name: "Orderan", onClick: onOrderanClick || (() => {}) },
-    { name: "Harga", onClick: onHargaClick || (() => {}) },
-  ];
-
-  const currentNavLinks = isLoggedIn ? loggedInNavLinks : navLinks;
-  const displayName = user?.firstName || user?.username || user?.email || "User";
+  const onMenuKey = (e) => {
+    const items = Array.from(e.currentTarget.querySelectorAll('[role="menuitem"]'));
+    const i = items.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
+    else if (e.key === "Tab") setMenuOpen(false);
+  };
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between">
-          <div
-            className="text-2xl font-bold text-gray-900 cursor-pointer"
-            onClick={onNavigateHome || (() => (window.location.href = "/"))}
-          >
-            Webkita
-          </div>
+    <header className={`sticky top-0 z-50 border-b bg-white/85 backdrop-blur transition-shadow duration-300 ${scrolled ? "border-ink-200 shadow-soft" : "border-transparent"}`}>
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
+        <Logo onClick={() => { navigate("/"); window.scrollTo({ top: 0 }); }} />
 
-          {/* Desktop Menu */}
-          <div className="hidden lg:flex items-center space-x-8">
-            {currentNavLinks.map((link) => (
-              <button
-                key={link.name}
-                onClick={link.onClick}
-                className="text-gray-700 hover:text-blue-600 transition font-medium"
-              >
-                {link.name}
+        <div className="flex items-center gap-1">
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
+            {links.map((l) => (
+              <button key={l.name} type="button" onClick={l.onClick} aria-current={l.active ? "page" : undefined} className={`${linkBase} ${l.active ? linkOn : linkIdle}`}>
+                {l.name}
               </button>
             ))}
-
-            {!isLoggedIn ? (
+            {!isLoggedIn && (
               <>
+                <button type="button" onClick={() => navigate("/login")} className={`ml-3 ${linkBase} ${linkIdle}`}>Masuk</button>
                 <button
-                  onClick={onLoginClick || (() => (window.location.href = "/login"))}
-                  className="text-gray-700 hover:text-blue-600 transition font-medium px-6 py-2"
-                >
-                  Masuk
-                </button>
-                <button
-                  onClick={onRegisterClick || (() => (window.location.href = "/register"))}
-                  className="bg-gray-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition"
+                  type="button"
+                  onClick={() => navigate("/register")}
+                  className="ml-1 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-lift focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 motion-reduce:hover:translate-y-0"
                 >
                   Daftar
                 </button>
               </>
-            ) : (
-              <div className="relative">
-                <button
-                  onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                  className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition"
-                >
-                  <User className="w-5 h-5" />
-                </button>
-
-                {profileMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <p className="text-sm font-semibold text-gray-900">{displayName}</p>
-                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                    </div>
-                    <button
-                      onClick={handleProfile}
-                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition flex items-center gap-2"
-                    >
-                      <User className="w-4 h-4" />
-                      Profil
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition flex items-center gap-2 border-t border-gray-200"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Keluar
-                    </button>
-                  </div>
-                )}
-              </div>
             )}
-          </div>
+          </nav>
 
-          {/* Mobile Menu Button */}
+          {/* Menu akun */}
+          {isLoggedIn && (
+            <div ref={wrapRef} className="relative ml-2">
+              <button
+                ref={menuBtnRef}
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setMenuOpen(true);
+                    requestAnimationFrame(() => wrapRef.current?.querySelector('[role="menuitem"]')?.focus());
+                  }
+                }}
+                className="grid h-10 w-10 place-items-center rounded-full bg-brand-600 text-white shadow-sm transition hover:bg-brand-700 hover:shadow-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                aria-label="Menu akun"
+              >
+                <User className="h-5 w-5" aria-hidden="true" />
+              </button>
+              {menuOpen && (
+                <div role="menu" aria-label="Akun" onKeyDown={onMenuKey} className="menu-in absolute right-0 top-[calc(100%+12px)] w-64 rounded-2xl border border-ink-200 bg-white p-1.5 shadow-lift">
+                  <div className="px-3.5 py-3">
+                    <p className="truncate font-bold text-ink-900">{displayName}</p>
+                    <p className="truncate text-xs text-ink-600">{user?.email}</p>
+                  </div>
+                  <div className="my-1 h-px bg-ink-200" role="separator" />
+                  <button role="menuitem" type="button" onClick={() => { setMenuOpen(false); navigate("/profile"); }} className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold text-ink-800 transition hover:bg-brand-50 focus-visible:bg-brand-50 focus-visible:outline-none">
+                    <User className="h-4 w-4" aria-hidden="true" /> Profil
+                  </button>
+                  <button role="menuitem" type="button" onClick={handleLogout} className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold text-[#B91C1C] transition hover:bg-[#FEE2E2] focus-visible:bg-[#FEE2E2] focus-visible:outline-none">
+                    <LogOut className="h-4 w-4" aria-hidden="true" /> Keluar
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tombol menu mobile */}
           <button
-            className="lg:hidden p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            type="button"
+            onClick={() => setMobileOpen((o) => !o)}
+            className="ml-1 grid h-11 w-11 place-items-center rounded-xl text-ink-800 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 md:hidden"
+            aria-controls="mobile-menu"
+            aria-expanded={mobileOpen}
+            aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
           </button>
         </div>
+      </div>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden mt-4 pb-4 space-y-3 border-t pt-4">
-            {currentNavLinks.map((link) => (
+      {/* Menu mobile */}
+      {mobileOpen && (
+        <div id="mobile-menu" className="border-t border-ink-200 bg-white md:hidden">
+          <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-5 py-4" aria-label="Navigasi seluler">
+            {links.map((l) => (
               <button
-                key={link.name}
-                onClick={() => { link.onClick(); setMobileMenuOpen(false); }}
-                className="block w-full text-left text-gray-700 hover:text-blue-600 transition font-medium py-2"
+                key={l.name}
+                type="button"
+                onClick={() => { l.onClick(); setMobileOpen(false); }}
+                aria-current={l.active ? "page" : undefined}
+                className={`rounded-lg px-3 py-3 text-left ${l.active ? "bg-brand-50 font-bold text-brand-700" : "font-semibold text-ink-800 hover:bg-brand-50"}`}
               >
-                {link.name}
+                {l.name}
               </button>
             ))}
-
-            {!isLoggedIn ? (
-              <>
-                <button
-                  onClick={() => { if (onLoginClick) onLoginClick(); setMobileMenuOpen(false); }}
-                  className="w-full text-gray-700 hover:text-blue-600 transition font-medium py-2 text-left"
-                >
-                  Masuk
-                </button>
-                <button
-                  onClick={() => { if (onRegisterClick) onRegisterClick(); setMobileMenuOpen(false); }}
-                  className="w-full bg-gray-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition"
-                >
-                  Daftar
-                </button>
-              </>
-            ) : (
-              <div className="py-3 border-t border-gray-200 pt-4">
-                <p className="text-sm font-semibold text-gray-900 px-2 mb-1">{displayName}</p>
-                <p className="text-xs text-gray-500 px-2 mb-3">{user?.email}</p>
-                <button
-                  onClick={handleProfile}
-                  className="w-full text-left text-gray-700 hover:text-blue-600 transition font-medium py-2 px-2 flex items-center gap-2"
-                >
-                  <User className="w-4 h-4" />
-                  Profil
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left text-red-600 hover:text-red-700 transition font-medium py-2 px-2 flex items-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Keluar
-                </button>
+            {!isLoggedIn && (
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => navigate("/login")} className="rounded-xl border border-ink-300 px-4 py-3 text-center font-bold text-ink-800">Masuk</button>
+                <button type="button" onClick={() => navigate("/register")} className="rounded-xl bg-brand-600 px-4 py-3 text-center font-bold text-white">Daftar</button>
               </div>
             )}
-          </div>
-        )}
-      </div>
-    </nav>
+          </nav>
+        </div>
+      )}
+    </header>
   );
 }

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Detail Proyek – Webkita</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS (CDN, untuk prototipe. Untuk produksi Laravel: pakai Tailwind via Vite) -->
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '"Segoe UI"', 'Roboto', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#EFF5FF', 100: '#DCE8FD', 200: '#BFD5FB', 300: '#93B8F7', 400: '#5F94F0', 500: '#3B73E6', 600: '#2559CC', 700: '#1D46A5', 800: '#1B3A82', 900: '#1A3068', 950: '#111F45' },
+            ink: { 50: '#F4F7FB', 100: '#EAF0F7', 200: '#D9E2EE', 300: '#BFCBDC', 400: '#8E9DB5', 500: '#66758F', 600: '#4B5A73', 700: '#36445A', 800: '#232F42', 900: '#152033', 950: '#0C1524' },
+          },
+          boxShadow: {
+            soft: '0 10px 30px -12px rgba(26, 48, 104, 0.18), 0 2px 6px rgba(26, 48, 104, 0.06)',
+            lift: '0 22px 40px -18px rgba(26, 48, 104, 0.30), 0 4px 10px rgba(26, 48, 104, 0.06)',
+          },
+          keyframes: {
+            blob: { '0%,100%': { transform: 'translate(0,0) scale(1)' }, '50%': { transform: 'translate(20px,-16px) scale(1.08)' } },
+            rise: { from: { opacity: '0', transform: 'translateY(14px)' }, to: { opacity: '1', transform: 'none' } },
+            pop: { '0%': { transform: 'scale(.6)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
+          },
+          animation: {
+            blob: 'blob 14s ease-in-out infinite',
+            rise: 'rise .45s cubic-bezier(.22,1,.36,1) both',
+            pop: 'pop .35s cubic-bezier(.34,1.56,.64,1) both',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    @keyframes menuIn { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+    .menu-in { animation: menuIn .18s cubic-bezier(.22,1,.36,1) both; transform-origin: top right; }
+    
+    .step-in { animation: rise .45s cubic-bezier(.22,1,.36,1) both; }
+    .no-scrollbar { scrollbar-width: none; }
+    @keyframes shake2 { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    .shake { animation: shake2 .35s ease-in-out; }
+
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body class="bg-ink-50 font-sans text-ink-900 antialiased selection:bg-brand-200">
+  <a href="#utama" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-white">Lewati ke konten utama</a>
+
+  <header id="navbar" class="sticky top-0 z-50 border-b border-transparent bg-white/85 backdrop-blur transition-shadow duration-300">
+    <div class="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
+      <a href="beranda.html" class="flex items-center gap-2 rounded-md text-xl font-extrabold tracking-tight text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400">
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white"><i data-lucide="code-xml" class="h-[18px] w-[18px]"></i></span>
+        Webkita
+      </a>
+
+      <div class="flex items-center gap-1">
+        <nav class="hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
+        <a href="beranda.html" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Beranda</a>
+        <a href="beranda.html#cara-kerja" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Cara Kerja</a>
+        <a href="orderan.html" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Orderan</a>
+        <a href="harga.html" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Harga</a>
+        </nav>
+
+        <!-- Menu akun -->
+        <div id="user-wrap" class="relative ml-2">
+          <button id="user-btn" type="button" class="grid h-10 w-10 place-items-center rounded-full bg-brand-600 text-white shadow-sm transition hover:bg-brand-700 hover:shadow-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400" aria-haspopup="menu" aria-expanded="false" aria-controls="user-menu" aria-label="Menu akun">
+            <i data-lucide="user" class="h-5 w-5"></i>
+          </button>
+          <div id="user-menu" role="menu" aria-label="Akun" class="menu-in absolute right-0 top-[calc(100%+12px)] hidden w-64 rounded-2xl border border-ink-200 bg-white p-1.5 shadow-lift">
+            <div class="px-3.5 py-3">
+              <p class="font-bold text-ink-900">Demo</p>
+              <p class="text-xs text-ink-600">demo@webkita.local</p>
+            </div>
+            <div class="my-1 h-px bg-ink-200" role="separator"></div>
+            <a role="menuitem" href="#" class="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-ink-800 transition hover:bg-brand-50 focus-visible:bg-brand-50 focus-visible:outline-none"><i data-lucide="user" class="h-4 w-4"></i> Profil</a>
+            <!-- Laravel: logout harus POST. Ganti dengan <form method="POST" action="{{ route('logout') }}">@csrf <button ...> -->
+            <a role="menuitem" href="login.html" class="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#B91C1C] transition hover:bg-[#FEE2E2] focus-visible:bg-[#FEE2E2] focus-visible:outline-none"><i data-lucide="log-out" class="h-4 w-4"></i> Keluar</a>
+          </div>
+        </div>
+
+        <button id="menu-btn" type="button" class="ml-1 grid h-11 w-11 place-items-center rounded-xl text-ink-800 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 md:hidden" aria-controls="mobile-menu" aria-expanded="false" aria-label="Buka menu">
+          <i data-lucide="menu" class="h-6 w-6"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="hidden border-t border-ink-200 bg-white md:hidden">
+      <nav class="mx-auto flex max-w-7xl flex-col gap-1 px-5 py-4" aria-label="Navigasi seluler">
+        <a href="beranda.html" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Beranda</a>
+        <a href="beranda.html#cara-kerja" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Cara Kerja</a>
+        <a href="orderan.html" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Orderan</a>
+        <a href="harga.html" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Harga</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="utama" class="relative overflow-hidden">
+    <div class="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-brand-100 opacity-70 blur-3xl animate-blob" aria-hidden="true"></div>
+    <div class="pointer-events-none absolute -right-24 top-80 h-72 w-72 rounded-full bg-brand-200/50 blur-3xl animate-blob" style="animation-delay:-7s" aria-hidden="true"></div>
+
+    <div class="relative mx-auto max-w-3xl px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
+      <a href="harga.html" class="group inline-flex items-center gap-2 rounded-md text-sm font-semibold text-ink-700 transition hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400">
+        <i data-lucide="arrow-left" class="h-4 w-4 transition-transform group-hover:-translate-x-1"></i> Kembali ke Halaman Harga
+      </a>
+
+      <div class="mt-6 text-center animate-rise">
+        <h1 class="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">Informasi Detail Proyek</h1>
+        <p class="mt-2 text-ink-600">Lengkapi informasi proyek Anda untuk mendapatkan penawaran terbaik.</p>
+        <div id="pkg-chip" class="mt-4 inline-flex"></div>
+      </div>
+
+      <div id="wizard">
+        <!-- ===== Stepper ===== -->
+        <nav aria-label="Langkah pengisian" class="mt-8 rounded-2xl border border-ink-200 bg-white px-4 py-5 shadow-soft sm:px-8">
+          <ol id="stepper" class="flex items-start"></ol>
+        </nav>
+
+        <!-- Laravel: action="{{ route('orders.store') }}" method="post" enctype="multipart/form-data" + @csrf -->
+        <form id="order-form" action="#" method="post" enctype="multipart/form-data" novalidate class="mt-6 rounded-3xl border border-ink-200 bg-white p-6 shadow-lift sm:p-9">
+          <input type="hidden" name="package" id="package" />
+
+          <!-- ===== LANGKAH 1 ===== -->
+          <section data-step="0" aria-labelledby="h-0">
+            <h2 id="h-0" tabindex="-1" class="text-2xl font-extrabold tracking-tight outline-none">Informasi Dasar</h2>
+            <p class="mt-1.5 text-ink-600">Berikan informasi dasar tentang proyek Anda.</p>
+            <div class="mt-7 space-y-6">
+              <div>
+                <label for="title" class="mb-1.5 block text-sm font-bold text-ink-800">Judul Proyek <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+                <input id="title" name="title" type="text" maxlength="100" placeholder="Contoh: Website E-commerce untuk Fashion" autocomplete="off" required aria-describedby="title-err" class="h-12 w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]" />
+                <p id="title-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+              </div>
+              <div>
+                <label for="category" class="mb-1.5 block text-sm font-bold text-ink-800">Kategori <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+                <div class="relative">
+                  <select id="category" name="category" required aria-describedby="category-err" class="h-12 appearance-none pr-11 w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2] invalid:text-ink-500">
+                    <option value="" disabled selected>Pilih kategori proyek</option>
+                    <option>Company Profile</option>
+                    <option>Toko Online (E-commerce)</option>
+                    <option>Landing Page</option>
+                    <option>Aplikasi Web</option>
+                    <option>Sistem Informasi</option>
+                    <option>Lainnya</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-500"></i>
+                </div>
+                <p id="category-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+              </div>
+              <div>
+                <label for="description" class="mb-1.5 block text-sm font-bold text-ink-800">Deskripsi Proyek <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+                <textarea id="description" name="description" rows="6" placeholder="Jelaskan secara detail kebutuhan proyek Anda, fitur yang diinginkan, target audience, dan ekspektasi hasil..." required aria-describedby="description-count description-err" class="min-h-[10rem] resize-y py-3 leading-relaxed w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]"></textarea>
+                <div class="mt-1.5 flex items-center justify-between gap-3">
+                  <p id="description-count" class="text-sm text-ink-600">Minimal 100 karakter. (<span id="dcount">0</span>/100)</p>
+                  <span id="dok" class="hidden items-center gap-1 text-sm font-semibold text-[#15803D]"><i data-lucide="circle-check" class="h-4 w-4"></i> Cukup</span>
+                </div>
+                <p id="description-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== LANGKAH 2 ===== -->
+          <section data-step="1" aria-labelledby="h-1" hidden>
+            <h2 id="h-1" tabindex="-1" class="text-2xl font-extrabold tracking-tight outline-none">Skill &amp; Lampiran</h2>
+            <p class="mt-1.5 text-ink-600">Tambahkan skill atau teknologi yang dibutuhkan untuk proyek ini.</p>
+            <div class="mt-7 space-y-8">
+              <div>
+                <label for="skill-input" class="mb-1 block text-sm font-bold text-ink-800">Skill yang Dibutuhkan <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+                <p id="skill-hint" class="mb-2 text-sm text-ink-600">Ketik lalu tekan Enter atau tombol Tambah. Belum tahu? Pilih "Serahkan ke developer".</p>
+                <div class="flex gap-3">
+                  <input id="skill-input" type="text" maxlength="30" placeholder="Contoh: React, Node.js, MongoDB" autocomplete="off" aria-describedby="skill-hint skills-err" class="h-12 min-w-0 flex-1 w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]" />
+                  <button type="button" id="skill-add" class="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"><i data-lucide="plus" class="h-5 w-5"></i> Tambah</button>
+                </div>
+                <div class="mt-3 flex flex-wrap items-center gap-2" id="skill-suggest" aria-label="Saran skill"></div>
+                <ul id="skill-list" class="mt-4 flex flex-wrap gap-2" aria-label="Skill yang dipilih"></ul>
+                <p id="skills-status" class="sr-only" role="status" aria-live="polite"></p>
+                <p id="skills-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+              </div>
+
+              <div>
+                <p class="mb-1 text-sm font-bold text-ink-800">Lampiran <span class="font-normal text-ink-600">(opsional)</span></p>
+                <p id="file-hint" class="mb-2 text-sm text-ink-600">Upload dokumen pendukung seperti wireframe, mockup, atau requirement document.</p>
+                <label id="dropzone" for="files" class="flex cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed border-ink-300 bg-white px-6 py-9 text-center transition hover:border-brand-400 hover:bg-brand-50 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-300">
+                  <span class="grid h-12 w-12 place-items-center rounded-xl bg-brand-100 text-brand-700 transition-transform"><i data-lucide="upload" class="h-6 w-6"></i></span>
+                  <span class="mt-3 font-bold text-ink-900">Klik untuk upload file <span class="font-normal text-ink-600">atau seret ke sini</span></span>
+                  <span class="mt-1 text-sm text-ink-600">PDF, PNG, JPG (Maks 10MB per file)</span>
+                  <input id="files" name="attachments[]" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" class="sr-only" aria-describedby="file-hint files-err" />
+                </label>
+                <p id="files-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+                <ul id="file-list" class="mt-4 space-y-2"></ul>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== LANGKAH 3 ===== -->
+          <section data-step="2" aria-labelledby="h-2" hidden>
+            <h2 id="h-2" tabindex="-1" class="text-2xl font-extrabold tracking-tight outline-none">Informasi Kontak</h2>
+            <p class="mt-1.5 text-ink-600">Kami akan menghubungi Anda melalui informasi ini.</p>
+            <div class="mt-7 space-y-6">
+              <div>
+                <label for="full_name" class="mb-1.5 block text-sm font-bold text-ink-800">Nama Lengkap <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+                <input id="full_name" name="full_name" type="text" placeholder="Masukkan nama lengkap Anda" autocomplete="name" required aria-describedby="full_name-err" class="h-12 w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]" />
+                <p id="full_name-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+              </div>
+              <div>
+                <label for="phone" class="mb-1.5 block text-sm font-bold text-ink-800">Nomor WhatsApp <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+                <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="08xxxxxxxxxx" autocomplete="tel" required aria-describedby="phone-err" class="h-12 w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]" />
+                <p id="phone-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+              </div>
+              <div>
+                <label for="notes" class="mb-1.5 block text-sm font-bold text-ink-800">Catatan Tambahan</label>
+                <textarea id="notes" name="notes" rows="4" placeholder="Ada hal lain yang ingin Anda sampaikan?" class="resize-y py-3 leading-relaxed w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]"></textarea>
+              </div>
+
+              <!-- ringkasan sebelum kirim -->
+              <dl class="grid gap-x-6 gap-y-3 rounded-2xl bg-ink-50 p-5 text-sm sm:grid-cols-2" aria-label="Ringkasan pengajuan">
+                <div><dt class="font-semibold text-ink-600">Paket</dt><dd id="sum-pkg" class="font-bold text-ink-900"></dd></div>
+                <div><dt class="font-semibold text-ink-600">Kategori</dt><dd id="sum-cat" class="font-bold text-ink-900"></dd></div>
+                <div class="sm:col-span-2"><dt class="font-semibold text-ink-600">Judul proyek</dt><dd id="sum-title" class="font-bold text-ink-900"></dd></div>
+                <div><dt class="font-semibold text-ink-600">Skill</dt><dd id="sum-skill" class="font-bold text-ink-900"></dd></div>
+                <div><dt class="font-semibold text-ink-600">Lampiran</dt><dd id="sum-file" class="font-bold text-ink-900"></dd></div>
+              </dl>
+
+              <p class="flex items-start gap-2.5 rounded-xl bg-[#DCFCE7] p-4 text-sm text-[#14532D]"><i data-lucide="circle-check" class="mt-0.5 h-5 w-5 shrink-0 text-[#15803D]"></i><span><strong>Hampir selesai!</strong> Pastikan semua informasi sudah benar sebelum mengirim.</span></p>
+            </div>
+          </section>
+
+          <!-- ===== Navigasi ===== -->
+          <div class="mt-9 flex items-center justify-between gap-3 border-t border-ink-200 pt-6">
+            <button type="button" id="btn-prev" class="inline-flex items-center justify-center rounded-xl border-2 border-ink-200 bg-white px-6 py-3 font-bold text-ink-800 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Kembali</button>
+            <button type="button" id="btn-next" aria-disabled="true" class="group inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3 font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-lift focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 aria-[disabled=true]:cursor-not-allowed aria-[disabled=true]:bg-ink-200 aria-[disabled=true]:text-ink-600 aria-[disabled=true]:shadow-none aria-[disabled=true]:hover:translate-y-0">
+              <svg id="spinner" class="hidden h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".3" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+              <span id="next-label">Selanjutnya</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ===== Berhasil ===== -->
+      <div id="done" hidden class="step-in mt-8 rounded-3xl border border-ink-200 bg-white px-6 py-14 text-center shadow-lift sm:px-12">
+        <span class="mx-auto grid h-20 w-20 animate-pop place-items-center rounded-full bg-[#DCFCE7] text-[#15803D]"><i data-lucide="check" class="h-10 w-10"></i></span>
+        <h2 id="done-title" tabindex="-1" class="mt-6 text-2xl font-extrabold tracking-tight outline-none sm:text-3xl">Pengajuan Terkirim</h2>
+        <p class="mx-auto mt-2 max-w-md text-ink-600">Terima kasih! Kami akan menghubungi Anda melalui WhatsApp. Status pengajuan bisa dipantau di halaman Orderan.</p>
+        <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <a href="orderan.html" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3 font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Lihat Orderan Saya <i data-lucide="arrow-right" class="h-4 w-4"></i></a>
+          <a href="beranda.html" class="inline-flex items-center justify-center rounded-xl border-2 border-ink-200 px-6 py-3 font-bold text-ink-800 transition hover:border-brand-400 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Kembali ke Beranda</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-ink-200 bg-white">
+    <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8">
+      <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+        <div>
+          <a href="index.html" class="flex items-center gap-2 text-xl font-extrabold tracking-tight text-ink-900">
+            <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white"><i data-lucide="code-xml" class="h-[18px] w-[18px]"></i></span>
+            Webkita
+          </a>
+          <p class="mt-4 max-w-[15rem] text-sm leading-relaxed text-ink-600">Hubungkan bisnis Anda dengan developer terbaik.</p>
+          <a href="#" aria-label="Webkita di GitHub" class="mt-4 inline-grid h-10 w-10 place-items-center rounded-full text-ink-600 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="github" class="h-5 w-5"></i></a>
+        </div>
+        <nav aria-label="Perusahaan">
+          <h3 class="text-sm font-bold text-ink-900">Perusahaan</h3>
+          <ul class="mt-4 space-y-3 text-sm text-ink-600">
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Tentang Kami</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Karir</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Blog</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Kontak</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Layanan">
+          <h3 class="text-sm font-bold text-ink-900">Layanan</h3>
+          <ul class="mt-4 space-y-3 text-sm text-ink-600">
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Developer</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">E-commerce</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Design</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Konsultasi</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Dukungan">
+          <h3 class="text-sm font-bold text-ink-900">Dukungan</h3>
+          <ul class="mt-4 space-y-3 text-sm text-ink-600">
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Pusat Bantuan</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">FAQ</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Syarat &amp; Ketentuan</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Kebijakan Privasi</a></li>
+          </ul>
+        </nav>
+        <div>
+          <h3 class="text-sm font-bold text-ink-900">Newsletter</h3>
+          <p class="mt-4 text-sm text-ink-600">Dapatkan update terbaru dari kami.</p>
+          <form class="mt-4 flex" action="#" method="post" onsubmit="return false">
+            <label for="newsletter-email" class="sr-only">Email Anda</label>
+            <input id="newsletter-email" type="email" required placeholder="Email Anda" autocomplete="email" class="min-w-0 flex-1 rounded-l-xl border border-r-0 border-ink-300 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-500 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-300" />
+            <button type="submit" class="rounded-r-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Kirim</button>
+          </form>
+        </div>
+      </div>
+      <div class="mt-12 border-t border-ink-200 pt-6 text-center text-sm text-ink-600">&copy; 2026 Webkita. Semua hak dilindungi.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script>
+    (function () {
+      var ICON_ATTRS = { 'aria-hidden': 'true', focusable: 'false' };
+      function icons() { if (window.lucide) lucide.createIcons({ attrs: ICON_ATTRS }); }
+      function $(id) { return document.getElementById(id); }
+      function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      /* ====== PAKET (dari ?paket=...) — di Laravel ambil dari tabel paket ====== */
+      var PKG = {
+        starter: ['Starter', 'Rp 500.000 – Rp 1.500.000'], professional: ['Professional', 'Rp 1.500.000 – Rp 5.000.000'],
+        business: ['Business', 'Rp 5.000.000 – Rp 15.000.000'], enterprise: ['Enterprise', 'Mulai Rp 15.000.000']
+      };
+      var pk = (new URLSearchParams(location.search).get('paket') || '').toLowerCase();
+      var chip = $('pkg-chip');
+      if (PKG[pk]) {
+        $('package').value = pk;
+        chip.innerHTML = '<span class="inline-flex flex-wrap items-center justify-center gap-x-2 rounded-full bg-brand-100 px-4 py-2 text-sm font-bold text-brand-800"><i data-lucide="package-check" class="h-4 w-4"></i>Paket Terpilih: ' + PKG[pk][0] + ' (' + PKG[pk][1] + ')<a href="harga.html" class="rounded font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Ganti</a></span>';
+      } else {
+        chip.innerHTML = '<a href="harga.html" class="inline-flex items-center gap-2 rounded-full bg-[#FEF3C7] px-4 py-2 text-sm font-bold text-[#92400E] hover:bg-[#FDE68A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="triangle-alert" class="h-4 w-4"></i>Belum memilih paket. Pilih paket dulu</a>';
+      }
+
+      /* ====== STATE ====== */
+      var STEPS = [['Informasi Dasar', 'clipboard-list'], ['Skill & Lampiran', 'wrench'], ['Kontak', 'phone']];
+      var step = 0, skills = [], files = [];
+      var KEY = 'webkita_pesan_draft';
+      var USER = { name: '', phone: '' };   // Laravel: isi dari akun yang login supaya form terisi otomatis
+
+      var form = $('order-form'), next = $('btn-next'), prev = $('btn-prev');
+      var secs = Array.prototype.slice.call(document.querySelectorAll('[data-step]'));
+
+      /* ----- draft (sessionStorage; aman jika diblokir) ----- */
+      function save() {
+        try { sessionStorage.setItem(KEY, JSON.stringify({ t: $('title').value, c: $('category').value, d: $('description').value, s: skills, n: $('full_name').value, p: $('phone').value, o: $('notes').value })); } catch (e) {}
+      }
+      function restore() {
+        var d = null; try { d = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) {}
+        if (d) { $('title').value = d.t || ''; $('category').value = d.c || ''; $('description').value = d.d || ''; skills = d.s || []; $('full_name').value = d.n || ''; $('phone').value = d.p || ''; $('notes').value = d.o || ''; }
+        if (!$('full_name').value) $('full_name').value = USER.name;
+        if (!$('phone').value) $('phone').value = USER.phone;
+        if ($('category').value) $('category').classList.remove('invalid:text-ink-500');
+      }
+
+      /* ----- validasi ----- */
+      var PHONE = /^(\+62|62|0)8[1-9][0-9]{6,11}$/;
+      var RULES = [
+        function () { var e = {}, t = $('title').value.trim(), d = $('description').value.trim();
+          if (!t) e.title = 'Judul proyek wajib diisi.'; else if (t.length < 5) e.title = 'Judul minimal 5 karakter.';
+          if (!$('category').value) e.category = 'Pilih kategori proyek.';
+          if (!d) e.description = 'Deskripsi proyek wajib diisi.'; else if (d.length < 100) e.description = 'Deskripsi minimal 100 karakter (kurang ' + (100 - d.length) + ' lagi).';
+          return e; },
+        function () { var e = {}; if (!skills.length) e.skills = 'Tambahkan minimal satu skill, atau pilih "Serahkan ke developer".'; return e; },
+        function () { var e = {}, n = $('full_name').value.trim(), p = $('phone').value.replace(/[\s-]/g, '');
+          if (!n) e.full_name = 'Nama lengkap wajib diisi.';
+          if (!p) e.phone = 'Nomor WhatsApp wajib diisi.'; else if (!PHONE.test(p)) e.phone = 'Gunakan nomor Indonesia, contoh 08123456789.';
+          return e; }
+      ];
+      var FIELDS = [['title', 'category', 'description'], ['skills'], ['full_name', 'phone']];
+
+      function setErr(id, msg) {
+        var el = $(id), er = $(id + '-err'); if (!er) return;
+        var tgt = id === 'skills' ? $('skill-input') : el;
+        if (msg) { if (tgt) tgt.setAttribute('aria-invalid', 'true'); er.querySelector('span').textContent = msg; er.classList.remove('hidden'); er.classList.add('flex'); }
+        else { if (tgt) tgt.removeAttribute('aria-invalid'); er.classList.add('hidden'); er.classList.remove('flex'); }
+      }
+      function check(showErrors) {
+        var e = RULES[step](), ok = !Object.keys(e).length;
+        if (showErrors) FIELDS[step].forEach(function (f) { setErr(f, e[f] || ''); });
+        next.setAttribute('aria-disabled', String(!ok));
+        return { ok: ok, errors: e };
+      }
+      function liveFix(id) { var er = $(id + '-err'); if (er && !er.classList.contains('hidden')) { var e = RULES[step](); setErr(id, e[id] || ''); } }
+
+      /* ----- stepper ----- */
+      function renderStepper() {
+        $('stepper').innerHTML = STEPS.map(function (s, i) {
+          var done = i < step, cur = i === step;
+          var circle = 'grid h-12 w-12 place-items-center rounded-full transition-all duration-300 ' + (cur ? 'bg-brand-600 text-white ring-4 ring-brand-100 shadow-soft' : done ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600');
+          var btn = '<button type="button" ' + (done ? 'data-go="' + i + '"' : 'tabindex="-1" aria-disabled="true"') + ' class="flex w-20 flex-col items-center gap-2 text-center sm:w-28 ' + (done ? 'cursor-pointer' : 'cursor-default') + ' rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400"' + (cur ? ' aria-current="step"' : '') + '>' +
+            '<span class="' + circle + '"><i data-lucide="' + (done ? 'check' : s[1]) + '" class="h-5 w-5"></i></span>' +
+            '<span class="text-xs font-bold leading-tight sm:text-sm ' + (cur || done ? 'text-brand-700' : 'text-ink-600') + '">' + s[0] + '<span class="sr-only">' + (done ? ' (selesai)' : cur ? ' (langkah saat ini)' : '') + '</span></span></button>';
+          var line = i < STEPS.length - 1 ? '<li aria-hidden="true" class="mt-[22px] h-1 flex-1 overflow-hidden rounded-full bg-ink-200"><div class="h-full rounded-full bg-brand-600 transition-all duration-500" style="width:' + (i < step ? 100 : 0) + '%"></div></li>' : '';
+          return '<li class="flex flex-col items-center">' + btn + '</li>' + line;
+        }).join('');
+        icons();
+      }
+      $('stepper').addEventListener('click', function (e) { var b = e.target.closest('[data-go]'); if (b) go(+b.dataset.go, true); });
+
+      function go(n, focus) {
+        step = n;
+        secs.forEach(function (s, i) { s.hidden = i !== n; if (i === n) { s.classList.remove('step-in'); void s.offsetWidth; s.classList.add('step-in'); } });
+        prev.textContent = n === 0 ? 'Kembali' : 'Sebelumnya';
+        $('next-label').textContent = n === 2 ? 'Kirim Pengajuan' : 'Selanjutnya';
+        if (n === 2) summary();
+        renderStepper(); check(false);
+        if (focus) { var h = $('h-' + n); h.focus({ preventScroll: true }); h.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }); }
+      }
+
+      prev.addEventListener('click', function () { if (step === 0) location.href = 'harga.html'; else go(step - 1, true); });
+      next.addEventListener('click', function () {
+        var r = check(true);
+        if (!r.ok) {
+          var first = FIELDS[step].filter(function (f) { return r.errors[f]; })[0];
+          $(first === 'skills' ? 'skill-input' : first).focus();
+          var c = form; c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); return;
+        }
+        if (step < 2) go(step + 1, true); else submit();
+      });
+      form.addEventListener('submit', function (e) { e.preventDefault(); next.click(); });
+
+      /* ----- langkah 1 ----- */
+      $('title').addEventListener('input', function () { save(); liveFix('title'); check(false); });
+      $('category').addEventListener('change', function () { this.classList.remove('invalid:text-ink-500'); save(); liveFix('category'); check(false); });
+      $('description').addEventListener('input', function () {
+        var n = this.value.trim().length; $('dcount').textContent = n;
+        var ok = n >= 100; $('dok').classList.toggle('hidden', !ok); $('dok').classList.toggle('inline-flex', ok);
+        $('description-count').classList.toggle('text-ink-600', !ok); $('description-count').classList.toggle('text-[#15803D]', ok);
+        save(); liveFix('description'); check(false);
+      });
+
+      /* ----- langkah 2: skill ----- */
+      var SUGGEST = ['Laravel', 'WordPress', 'React', 'Node.js', 'MongoDB', 'Tailwind CSS', 'Serahkan ke developer'];
+      function renderSkills() {
+        $('skill-list').innerHTML = skills.map(function (s, i) {
+          return '<li class="step-in inline-flex items-center gap-1.5 rounded-full bg-brand-100 py-1.5 pl-3.5 pr-1.5 text-sm font-semibold text-brand-800">' + esc(s) +
+            '<button type="button" data-rm="' + i + '" class="grid h-6 w-6 place-items-center rounded-full text-brand-700 transition hover:bg-brand-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400" aria-label="Hapus skill ' + esc(s) + '"><i data-lucide="x" class="h-3.5 w-3.5"></i></button></li>';
+        }).join('');
+        $('skill-suggest').innerHTML = '<span class="text-sm text-ink-600">Saran:</span>' + SUGGEST.filter(function (s) { return skills.map(function (x) { return x.toLowerCase(); }).indexOf(s.toLowerCase()) < 0; }).map(function (s) {
+          return '<button type="button" data-add="' + esc(s) + '" class="rounded-full border border-ink-300 bg-white px-3 py-1 text-sm font-semibold text-ink-700 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">+ ' + esc(s) + '</button>';
+        }).join('');
+        icons();
+      }
+      function addSkill(v) {
+        v = v.trim().replace(/\s+/g, ' '); if (!v) return;
+        if (skills.some(function (x) { return x.toLowerCase() === v.toLowerCase(); })) { $('skills-status').textContent = v + ' sudah ditambahkan.'; return; }
+        skills.push(v); $('skill-input').value = ''; renderSkills(); save(); setErr('skills', ''); check(false);
+        $('skills-status').textContent = v + ' ditambahkan. Total ' + skills.length + ' skill.';
+      }
+      $('skill-add').addEventListener('click', function () { addSkill($('skill-input').value); $('skill-input').focus(); });
+      $('skill-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addSkill(this.value); } });
+      $('skill-suggest').addEventListener('click', function (e) { var b = e.target.closest('[data-add]'); if (b) addSkill(b.dataset.add); });
+      $('skill-list').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-rm]'); if (!b) return;
+        var removed = skills.splice(+b.dataset.rm, 1)[0]; renderSkills(); save(); check(false);
+        $('skills-status').textContent = removed + ' dihapus.'; $('skill-input').focus();
+      });
+
+      /* ----- langkah 2: lampiran ----- */
+      var MAX = 10 * 1024 * 1024, OK = /\.(pdf|png|jpe?g)$/i;
+      function size(b) { return b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(1) + ' MB'; }
+      function renderFiles() {
+        $('file-list').innerHTML = files.map(function (f, i) {
+          var img = /\.(png|jpe?g)$/i.test(f.name);
+          return '<li class="step-in flex items-center gap-3 rounded-xl border border-ink-200 bg-white p-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"><i data-lucide="' + (img ? 'image' : 'file-text') + '" class="h-5 w-5"></i></span>' +
+            '<span class="min-w-0 flex-1"><span class="block truncate text-sm font-bold text-ink-900">' + esc(f.name) + '</span><span class="text-xs text-ink-600">' + size(f.size) + '</span></span>' +
+            '<button type="button" data-rmf="' + i + '" class="grid h-9 w-9 place-items-center rounded-lg text-ink-600 transition hover:bg-[#FEE2E2] hover:text-[#B91C1C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400" aria-label="Hapus file ' + esc(f.name) + '"><i data-lucide="trash-2" class="h-4 w-4"></i></button></li>';
+        }).join('');
+        icons();
+      }
+      function syncInput() { try { var dt = new DataTransfer(); files.forEach(function (f) { dt.items.add(f); }); $('files').files = dt.files; } catch (e) {} }
+      function addFiles(list) {
+        var bad = [];
+        Array.prototype.forEach.call(list, function (f) {
+          if (!OK.test(f.name)) bad.push(f.name + ': format harus PDF, PNG, atau JPG');
+          else if (f.size > MAX) bad.push(f.name + ': ukuran melebihi 10MB');
+          else if (!files.some(function (x) { return x.name === f.name && x.size === f.size; })) files.push(f);
+        });
+        setErr('files', bad.join('. ')); renderFiles(); syncInput();
+      }
+      $('files').addEventListener('change', function () { addFiles(this.files); });
+      $('file-list').addEventListener('click', function (e) { var b = e.target.closest('[data-rmf]'); if (!b) return; files.splice(+b.dataset.rmf, 1); renderFiles(); syncInput(); setErr('files', ''); });
+      var dz = $('dropzone');
+      ['dragenter', 'dragover'].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add('border-brand-500', 'bg-brand-50'); }); });
+      ['dragleave', 'drop'].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove('border-brand-500', 'bg-brand-50'); }); });
+      dz.addEventListener('drop', function (e) { addFiles(e.dataTransfer.files); });
+
+      /* ----- langkah 3 ----- */
+      $('full_name').addEventListener('input', function () { save(); liveFix('full_name'); check(false); });
+      $('phone').addEventListener('input', function () { save(); liveFix('phone'); check(false); });
+      $('notes').addEventListener('input', save);
+      function summary() {
+        $('sum-pkg').textContent = PKG[pk] ? PKG[pk][0] : '-';
+        $('sum-cat').textContent = $('category').value || '-';
+        $('sum-title').textContent = $('title').value.trim() || '-';
+        $('sum-skill').textContent = skills.length ? skills.join(', ') : '-';
+        $('sum-file').textContent = files.length ? files.length + ' file' : 'Tidak ada';
+      }
+
+      /* ----- kirim ----- */
+      function submit() {
+        next.setAttribute('aria-disabled', 'true'); next.disabled = false;
+        $('spinner').classList.remove('hidden'); $('next-label').textContent = 'Mengirim…';
+        // Mode demo: aktif selama action="#". Di Laravel isi action dengan route, maka form terkirim normal (multipart).
+        if (form.getAttribute('action') === '#') {
+          setTimeout(function () {
+            try { sessionStorage.removeItem(KEY); } catch (e) {}
+            $('wizard').hidden = true; $('done').hidden = false; icons();
+            $('done-title').focus({ preventScroll: true }); window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+          }, 1300);
+        } else { form.submit(); }
+      }
+
+      /* ----- navbar ----- */
+      var nav = $('navbar');
+      function onScroll() { var s = window.scrollY > 8; nav.classList.toggle('shadow-soft', s); nav.classList.toggle('border-ink-200', s); nav.classList.toggle('border-transparent', !s); }
+      onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+      var mb = $('menu-btn'), mm = $('mobile-menu');
+      function setMenu(o) { mm.classList.toggle('hidden', !o); mb.setAttribute('aria-expanded', String(o)); mb.setAttribute('aria-label', o ? 'Tutup menu' : 'Buka menu'); mb.innerHTML = '<i data-lucide="' + (o ? 'x' : 'menu') + '" class="h-6 w-6"></i>'; icons(); }
+      mb.addEventListener('click', function () { setMenu(mb.getAttribute('aria-expanded') !== 'true'); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+
+      /* ----- mulai ----- */
+      restore(); renderSkills(); renderFiles();
+      var n0 = $('description').value.trim().length; $('dcount').textContent = n0;
+      if (n0 >= 100) { $('dok').classList.remove('hidden'); $('dok').classList.add('inline-flex'); $('description-count').classList.add('text-[#15803D]'); }
+      go(0, false); icons();
+    })();
+  </script>
+
+  <script>
+    /* Menu akun (dropdown) */
+    (function () {
+      var wrap = document.getElementById('user-wrap'), btn = document.getElementById('user-btn'), menu = document.getElementById('user-menu');
+      var items = function () { return Array.prototype.slice.call(menu.querySelectorAll('[role=menuitem]')); };
+      function setOpen(o, focusFirst) {
+        menu.classList.toggle('hidden', !o);
+        btn.setAttribute('aria-expanded', String(o));
+        if (o) { menu.classList.remove('menu-in'); void menu.offsetWidth; menu.classList.add('menu-in'); if (focusFirst) items()[0].focus(); }
+      }
+      btn.addEventListener('click', function () { setOpen(menu.classList.contains('hidden'), false); });
+      btn.addEventListener('keydown', function (e) { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true, true); } });
+      document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) setOpen(false); });
+      document.addEventListener('keydown', function (e) {
+        if (menu.classList.contains('hidden')) return;
+        var list = items(), i = list.indexOf(document.activeElement);
+        if (e.key === 'Escape') { setOpen(false); btn.focus(); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); list[(i + 1) % list.length].focus(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); list[(i - 1 + list.length) % list.length].focus(); }
+        else if (e.key === 'Tab') { setOpen(false); }
+      });
+    })();
+  </script>
+</body>
+</html>

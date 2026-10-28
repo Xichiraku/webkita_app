@@ -117,6 +117,19 @@ authRoute.get('/verify-email', async (c) => {
             .single()
 
         if (findError || !user) {
+            // Token sudah dipakai (dikosongkan setelah verifikasi): bedakan "sudah terverifikasi" dari "tidak valid"
+            const email = c.req.query('email')
+            if (email) {
+                const { data: byEmail } = await supabase
+                    .from('users')
+                    .select('email_verified_at')
+                    .eq('email', email)
+                    .is('deleted_at', null)
+                    .maybeSingle()
+                if (byEmail?.email_verified_at) {
+                    return c.json({ status: 'error', message: 'Email sudah diverifikasi' }, 400)
+                }
+            }
             return c.json({ status: 'error', message: 'Token tidak valid' }, 400)
         }
 

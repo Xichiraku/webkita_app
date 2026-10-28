@@ -1,203 +1,146 @@
-import React, { useState, useEffect } from "react";
-import { X, FileText, User, Phone, Tag, Paperclip, Download } from "lucide-react";
-import { formatDateLong, PLAN_CONFIG } from "../../utils/adminConstants";
+import React, { useEffect, useState } from "react";
+import { BadgeCheck, CircleX, Download, FileText, Image, Loader2, MessageCircle, Paperclip, Tag, User, X } from "lucide-react";
 import API from "../../core/utils/api_client";
-import StatusBadge from "./StatusBadge";
-import StatusUpdater from "./StatusUpdater";
+import { ENDPOINTS } from "../../core/constants/api_endpoint";
+import Modal from "../../components/ui/Modal";
+import { OrderStatusChip } from "../../components/ui/StatusChip";
+import { formatDateLong, formatSize, rp, waLink } from "../../utils/format";
+import { categoryLabel } from "../../utils/status";
 
-const Row = ({ label, children }) => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-    <span style={{ fontSize: 11, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 0.5 }}>
-      {label}
-    </span>
-    <span style={{ fontSize: 14, color: "#1E293B", lineHeight: 1.6, wordBreak: "break-word" }}>
-      {children}
-    </span>
-  </div>
-);
+const Label = ({ children }) => <p className="mt-4 text-xs font-bold uppercase tracking-wide text-ink-600 first:mt-0">{children}</p>;
 
-const Section = ({ icon: Icon, title, children }) => (
-  <div style={{
-    background: "#F8FAFC", borderRadius: 12,
-    border: "1px solid #F1F5F9", padding: "16px 18px",
-  }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 14 }}>
-      <Icon size={15} color="#3B82F6" />
-      <span style={{ fontSize: 13, fontWeight: 700, color: "#0F172A" }}>{title}</span>
-    </div>
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {children}
-    </div>
-  </div>
-);
-
-// ─── Format file size ─────────────────────────────────────────────────────────
-const formatSize = (bytes) => {
-  if (!bytes) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
-};
-
-const OrderDetailModal = ({ order, onClose, onUpdated }) => {
-  const [attachments, setAttachments] = useState([]);
+const OrderDetailModal = ({ order, onClose, onApprove, onReject, notify }) => {
+  const [files, setFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [downloading, setDownloading] = useState(null);
 
   useEffect(() => {
     if (!order?.id) return;
+    let alive = true;
     setLoadingFiles(true);
-    API.get(`/attachments/${order.id}`)
-      .then((res) => setAttachments(res.data ?? []))
-      .catch(() => setAttachments([]))
-      .finally(() => setLoadingFiles(false));
+    API.get(ENDPOINTS.GET_ATTACHMENTS(order.id))
+      .then((res) => alive && setFiles(res?.data ?? []))
+      .catch(() => alive && setFiles([]))
+      .finally(() => alive && setLoadingFiles(false));
+    return () => { alive = false; };
   }, [order?.id]);
 
-  const handleDownload = async (attachment) => {
+  const download = async (att) => {
+    setDownloading(att.id);
     try {
-      const res = await API.get(`/attachments/download/${attachment.id}`, {
-        responseType: "blob",
-      });
-      const url = URL.createObjectURL(res);
+      const blob = await API.get(`/attachments/download/${att.id}`, { responseType: "blob" });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = attachment.file_name;
+      a.download = att.file_name;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
-      alert("Gagal mengunduh file");
+      notify?.("Gagal mengunduh file", "err");
+    } finally {
+      setDownloading(null);
     }
   };
 
-  if (!order) return null;
-  const plan = PLAN_CONFIG[order.planTitle];
+  const skills = String(order?.skills || "").split(",").map((s) => s.trim()).filter(Boolean);
 
   return (
-    <>
-      <div onClick={onClose} style={{
-        position: "fixed", inset: 0, zIndex: 100,
-        background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2px)",
-      }} />
-
-      <div style={{
-        position: "fixed", top: "50%", left: "50%",
-        transform: "translate(-50%, -50%)",
-        zIndex: 101,
-        width: "min(680px, calc(100vw - 32px))",
-        maxHeight: "85vh",
-        background: "#fff", borderRadius: 20,
-        boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
-        display: "flex", flexDirection: "column", overflow: "hidden",
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: "20px 24px", borderBottom: "1px solid #F1F5F9",
-          display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12,
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-              <StatusBadge status={order.status} />
-              {order.planTitle && (
-                <span style={{
-                  fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 20,
-                  background: plan?.bg || "#F1F5F9", color: plan?.color || "#374151",
-                }}>
-                  Paket {order.planTitle}
-                </span>
-              )}
+    <Modal open={!!order} onClose={onClose} labelledBy="d-title" className="w-[min(94vw,46rem)] overflow-hidden">
+      {order && (
+        <div className="flex max-h-[92vh] flex-col">
+          <div className="flex items-start justify-between gap-4 border-b border-ink-100 p-5 sm:p-6">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <OrderStatusChip status={order.status} admin />
+                {order.planTitle && <span className="rounded-full bg-ink-100 px-3 py-1 text-xs font-bold text-ink-800">Paket {order.planTitle}</span>}
+              </div>
+              <h2 id="d-title" className="mt-3 break-words text-xl font-extrabold tracking-tight sm:text-2xl">{order.projectTitle}</h2>
+              <p className="mt-1 text-sm text-ink-600">#{order.id} · {categoryLabel(order.category)} · Dibuat {formatDateLong(order.createdAt)}</p>
             </div>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0F172A", wordBreak: "break-word" }}>
-              {order.projectTitle}
-            </h2>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748B" }}>
-              #{order.id} · {order.category} · Dibuat {formatDateLong(order.createdAt)}
-            </p>
-          </div>
-          <button onClick={onClose} style={{
-            width: 32, height: 32, borderRadius: 8, border: "1px solid #E2E8F0",
-            background: "#fff", cursor: "pointer", flexShrink: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <X size={15} color="#64748B" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
-
-          <Section icon={FileText} title="Detail Proyek">
-            <Row label="Deskripsi">{order.description}</Row>
-            <Row label="Skills">{order.skills}</Row>
-            {order.additionalNotes && (
-              <Row label="Catatan Tambahan">{order.additionalNotes}</Row>
-            )}
-          </Section>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-            <Section icon={User} title="Kontak">
-              <Row label="Nama">{order.contactName}</Row>
-              <Row label="Telepon">{order.contactPhone}</Row>
-            </Section>
-            <Section icon={Tag} title="Paket & Harga">
-              <Row label="Paket">{order.planTitle || "–"}</Row>
-              <Row label="Estimasi Harga">
-                <span style={{ fontSize: 15, fontWeight: 700, color: "#3B82F6" }}>
-                  {order.priceRange}
-                </span>
-              </Row>
-            </Section>
+            <button type="button" onClick={onClose} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-ink-200 text-ink-700 transition hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400" aria-label="Tutup detail">
+              <X className="h-5 w-5" aria-hidden="true" />
+            </button>
           </div>
 
-          {/* ── Lampiran ── */}
-          <Section icon={Paperclip} title="Lampiran">
-            {loadingFiles ? (
-              <span style={{ fontSize: 13, color: "#94A3B8" }}>Memuat lampiran...</span>
-            ) : attachments.length === 0 ? (
-              <span style={{ fontSize: 13, color: "#94A3B8" }}>Tidak ada lampiran</span>
-            ) : (
-              attachments.map((att) => (
-                <div key={att.id} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "10px 14px", borderRadius: 9,
-                  background: "#fff", border: "1px solid #E2E8F0", gap: 12,
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                    <FileText size={16} color="#3B82F6" style={{ flexShrink: 0 }} />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{
-                        fontSize: 13, fontWeight: 600, color: "#0F172A",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      }}>
-                        {att.file_name}
-                      </div>
-                      <div style={{ fontSize: 11, color: "#94A3B8" }}>
-                        {formatSize(att.file_size)} · {att.file_type}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDownload(att)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 5,
-                      padding: "6px 12px", borderRadius: 7,
-                      border: "1px solid #BFDBFE", background: "#EFF6FF",
-                      color: "#3B82F6", fontSize: 12, fontWeight: 600,
-                      cursor: "pointer", flexShrink: 0,
-                    }}
-                  >
-                    <Download size={13} />
-                    Unduh
-                  </button>
-                </div>
-              ))
-            )}
-          </Section>
+          <div className="scroll-thin space-y-4 overflow-y-auto bg-white p-5 sm:p-6">
+            <section className="rounded-2xl bg-ink-50 p-5">
+              <h3 className="flex items-center gap-2 text-sm font-extrabold"><FileText className="h-4 w-4 text-brand-600" aria-hidden="true" /> Detail Proyek</h3>
+              <Label>Deskripsi</Label>
+              <p className="mt-1 whitespace-pre-line break-words leading-relaxed text-ink-900">{order.description}</p>
+              <Label>Skill</Label>
+              <ul className="mt-1.5 flex flex-wrap gap-2">
+                {skills.length ? skills.map((s) => <li key={s} className="rounded-full bg-brand-100 px-3 py-1 text-sm font-semibold text-brand-800">{s}</li>) : <li className="text-ink-600">-</li>}
+              </ul>
+              {order.status === "rejected" && (<><Label>Alasan Penolakan</Label><p className="mt-1 whitespace-pre-line break-words text-[#991B1B]">{order.rejectReason || "Tidak dicantumkan"}</p></>)}
+              {order.additionalNotes && (<><Label>Catatan Tambahan</Label><p className="mt-1 whitespace-pre-line break-words text-ink-900">{order.additionalNotes}</p></>)}
+            </section>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <section className="rounded-2xl bg-ink-50 p-5">
+                <h3 className="flex items-center gap-2 text-sm font-extrabold"><User className="h-4 w-4 text-brand-600" aria-hidden="true" /> Kontak</h3>
+                <Label>Nama</Label>
+                <p className="mt-1 text-ink-900">{order.contactName}</p>
+                <Label>Telepon</Label>
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-ink-900">{order.contactPhone}</span>
+                  {order.contactPhone && order.contactPhone !== "–" && (
+                    <a href={waLink(order.contactPhone)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded text-sm font-bold text-brand-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">
+                      <MessageCircle className="h-4 w-4" aria-hidden="true" /> Chat WhatsApp
+                    </a>
+                  )}
+                </p>
+              </section>
+              <section className="rounded-2xl bg-ink-50 p-5">
+                <h3 className="flex items-center gap-2 text-sm font-extrabold"><Tag className="h-4 w-4 text-brand-600" aria-hidden="true" /> Paket &amp; Harga</h3>
+                <Label>Paket</Label>
+                <p className="mt-1 text-ink-900">{order.planTitle || "–"}</p>
+                <Label>Estimasi harga</Label>
+                <p className="mt-1 font-extrabold text-brand-700">{order.priceRange || "–"}</p>
+                <Label>Harga final</Label>
+                <p className="mt-1 font-extrabold text-ink-900">{order.price ? rp(order.price) : order.planPriceRange || "Belum diatur"}</p>
+              </section>
+            </div>
+
+            <section className="rounded-2xl bg-ink-50 p-5">
+              <h3 className="flex items-center gap-2 text-sm font-extrabold"><Paperclip className="h-4 w-4 text-brand-600" aria-hidden="true" /> Lampiran</h3>
+              <ul className="mt-4 space-y-2">
+                {loadingFiles ? (
+                  <li className="flex items-center gap-2 text-ink-600"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Memuat lampiran…</li>
+                ) : files.length === 0 ? (
+                  <li className="text-ink-600">Tidak ada lampiran.</li>
+                ) : (
+                  files.map((f) => {
+                    const Ico = String(f.file_type || "").startsWith("image") ? Image : FileText;
+                    return (
+                      <li key={f.id} className="flex items-center gap-3 rounded-xl border border-ink-200 bg-white p-3">
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"><Ico className="h-5 w-5" aria-hidden="true" /></span>
+                        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold">{f.file_name}</span><span className="text-xs text-ink-600">{formatSize(f.file_size)} · {f.file_type}</span></span>
+                        <button type="button" onClick={() => download(f)} disabled={downloading === f.id} className="inline-flex items-center gap-1.5 rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-sm font-bold text-brand-700 transition hover:bg-brand-100 disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">
+                          {downloading === f.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />} Unduh
+                        </button>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </section>
+          </div>
+
+          {order.status === "pending" && (
+            <div className="flex flex-col-reverse gap-3 border-t border-ink-100 bg-white p-5 sm:flex-row sm:justify-end sm:p-6">
+              <button type="button" onClick={() => onReject(order)} className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#FCA5A5] px-5 py-2.5 font-bold text-[#B91C1C] transition hover:bg-[#FEE2E2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#DC2626]">
+                <CircleX className="h-4 w-4" aria-hidden="true" /> Tolak
+              </button>
+              <button type="button" onClick={() => onApprove(order)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 font-bold text-white shadow-soft transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">
+                <BadgeCheck className="h-4 w-4" aria-hidden="true" /> Setujui Orderan
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Footer */}
-       
-      </div>
-    </>
+      )}
+    </Modal>
   );
 };
 

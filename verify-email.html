@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Verifikasi Email – Webkita</title>
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS (CDN untuk prototipe. Produksi Laravel: Tailwind via Vite) -->
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '"Segoe UI"', 'Roboto', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#EFF5FF', 100: '#DCE8FD', 200: '#BFD5FB', 300: '#93B8F7', 400: '#5F94F0', 500: '#3B73E6', 600: '#2559CC', 700: '#1D46A5', 800: '#1B3A82', 900: '#1A3068', 950: '#111F45' },
+            ink: { 50: '#F4F7FB', 100: '#EAF0F7', 200: '#D9E2EE', 300: '#BFCBDC', 400: '#8E9DB5', 500: '#66758F', 600: '#4B5A73', 700: '#36445A', 800: '#232F42', 900: '#152033', 950: '#0C1524' },
+          },
+          boxShadow: {
+            soft: '0 10px 30px -12px rgba(26, 48, 104, 0.18), 0 2px 6px rgba(26, 48, 104, 0.06)',
+            lift: '0 28px 50px -22px rgba(26, 48, 104, 0.32), 0 4px 10px rgba(26, 48, 104, 0.06)',
+          },
+          keyframes: {
+            blob: { '0%,100%': { transform: 'translate(0,0) scale(1)' }, '50%': { transform: 'translate(20px,-16px) scale(1.08)' } },
+            rise: { from: { opacity: '0', transform: 'translateY(18px)' }, to: { opacity: '1', transform: 'none' } },
+            shake: { '0%,100%': { transform: 'translateX(0)' }, '20%,60%': { transform: 'translateX(-6px)' }, '40%,80%': { transform: 'translateX(6px)' } },
+          },
+          animation: {
+            blob: 'blob 14s ease-in-out infinite',
+            rise: 'rise .7s cubic-bezier(.22,1,.36,1) both',
+            shake: 'shake .4s ease-in-out',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+    .pop { animation: pop .5s cubic-bezier(.34,1.56,.64,1) both; }
+    @keyframes stepIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+    .step-in { animation: stepIn .4s cubic-bezier(.22,1,.36,1) both; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  
+    @keyframes spin2 { to { transform: rotate(360deg); } }
+    .spin2 { animation: spin2 .8s linear infinite; }
+    [hidden] { display: none !important; }
+
+  </style>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+</head>
+<body class="bg-white font-sans text-ink-900 antialiased selection:bg-brand-200">
+  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-white to-ink-50 print:hidden" aria-hidden="true">
+    <div class="absolute -left-24 top-10 h-80 w-80 rounded-full bg-brand-100 opacity-80 blur-3xl animate-blob"></div>
+    <div class="absolute -right-24 bottom-10 h-96 w-96 rounded-full bg-brand-200/60 blur-3xl animate-blob" style="animation-delay:-7s"></div>
+  </div>
+
+  <main class="flex min-h-screen flex-col items-center justify-center px-5 py-10">
+    <div class="w-full max-w-[28rem] animate-rise">
+      <header class="mb-7 text-center">
+        <a href="index.html" class="inline-block rounded-md text-3xl font-extrabold tracking-tight text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-600">Webkita</a>
+        <p class="mt-1 text-xs font-bold uppercase tracking-[.18em] text-ink-500">Platform Teknologi #1</p>
+      </header>
+
+      <div class="overflow-hidden rounded-3xl border border-ink-200 bg-white shadow-lift">
+        <div class="h-1 bg-gradient-to-r from-ink-900 via-brand-600 to-brand-300" aria-hidden="true"></div>
+        <div class="p-7 text-center sm:p-9">
+          <p id="live" class="sr-only" role="status" aria-live="polite"></p>
+
+          <!-- LOADING -->
+          <section data-state="loading" aria-labelledby="h-loading">
+            <span class="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full bg-brand-50"><span class="spin2 block h-8 w-8 rounded-full border-[3px] border-brand-100 border-t-brand-600" aria-hidden="true"></span></span>
+            <p class="mb-1.5 text-xs font-extrabold uppercase tracking-[.16em] text-ink-500">Memproses</p>
+            <h1 id="h-loading" tabindex="-1" class="text-2xl font-extrabold tracking-tight outline-none">Memverifikasi email…</h1>
+            <p class="mt-2 text-sm leading-relaxed text-ink-600">Mohon tunggu sebentar.</p>
+          </section>
+
+          <!-- BERHASIL -->
+          <section data-state="success" hidden aria-labelledby="h-success">
+            <span class="pop mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full bg-[#DCFCE7] text-[#15803D]"><i data-lucide="mail-check" class="h-8 w-8"></i></span>
+            <p class="mb-1.5 text-xs font-extrabold uppercase tracking-[.16em] text-[#15803D]">Selesai</p>
+            <h1 id="h-success" tabindex="-1" class="text-2xl font-extrabold tracking-tight outline-none">Verifikasi Berhasil!</h1>
+            <p class="mt-2 text-sm leading-relaxed text-ink-600">Email kamu sudah terverifikasi. Sekarang kamu bisa masuk dan mulai memesan proyek.</p>
+            <a href="login.html" class="mt-7 flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-sm font-bold text-white shadow-soft transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">Masuk &amp; mulai sekarang <i data-lucide="arrow-right" class="h-4 w-4"></i></a>
+          </section>
+
+          <!-- SUDAH TERVERIFIKASI -->
+          <section data-state="already" hidden aria-labelledby="h-already">
+            <span class="pop mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full bg-[#CFFAFE] text-[#0E7490]"><i data-lucide="badge-check" class="h-8 w-8"></i></span>
+            <p class="mb-1.5 text-xs font-extrabold uppercase tracking-[.16em] text-[#0E7490]">Info</p>
+            <h1 id="h-already" tabindex="-1" class="text-2xl font-extrabold tracking-tight outline-none">Email sudah terverifikasi</h1>
+            <p class="mt-2 text-sm leading-relaxed text-ink-600">Link ini sudah pernah dipakai. Tidak ada yang perlu dilakukan lagi, silakan masuk ke akunmu.</p>
+            <a href="login.html" class="mt-7 flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-sm font-bold text-white shadow-soft transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">Masuk ke akun <i data-lucide="arrow-right" class="h-4 w-4"></i></a>
+          </section>
+
+          <!-- GAGAL / KEDALUWARSA -->
+          <section data-state="failed" hidden aria-labelledby="h-failed">
+            <span class="pop mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full bg-[#FEE2E2] text-[#B91C1C]"><i data-lucide="mail-x" id="f-icon" class="h-8 w-8"></i></span>
+            <p class="mb-1.5 text-xs font-extrabold uppercase tracking-[.16em] text-[#B91C1C]">Gagal</p>
+            <h1 id="h-failed" tabindex="-1" class="text-2xl font-extrabold tracking-tight outline-none">Verifikasi Gagal</h1>
+            <p id="f-desc" class="mt-2 text-sm leading-relaxed text-ink-600"></p>
+
+            <div class="mt-6 flex items-start gap-2.5 rounded-xl border-l-4 border-brand-600 bg-brand-50 p-3.5 text-left text-sm leading-relaxed text-brand-800">
+              <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0"></i>
+              <p>Link verifikasi berlaku <strong>24 jam</strong> sejak email dikirim. Kamu bisa minta email verifikasi baru di bawah.</p>
+            </div>
+
+            <form id="resend" class="mt-5 text-left" novalidate>
+              <div id="email-wrap">
+                <label for="r-email" class="mb-1.5 block text-sm font-bold text-ink-800">Email yang didaftarkan</label>
+                <div class="relative">
+                  <i data-lucide="mail" class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-500"></i>
+                  <input id="r-email" type="email" autocomplete="email" inputmode="email" placeholder="nama@email.com" aria-describedby="r-err" class="h-12 w-full rounded-xl border border-ink-300 bg-white pl-11 pr-3 text-sm text-ink-900 placeholder:text-ink-500 transition focus:border-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-600/15 aria-[invalid=true]:border-[#B91C1C]" />
+                </div>
+                <p id="r-err" class="mt-1.5 hidden items-start gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i><span></span></p>
+              </div>
+              <p id="email-known" class="hidden text-center text-sm text-ink-600">Email akan dikirim ke <strong id="email-masked" class="text-ink-900"></strong></p>
+              <button id="r-btn" type="submit" class="mt-3 flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl border border-ink-300 bg-white px-4 text-sm font-bold text-ink-800 transition hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 aria-disabled:hover:bg-white"><span id="r-label">Kirim ulang email verifikasi</span></button>
+              <p id="r-msg" class="mt-3 hidden items-start gap-2 rounded-xl bg-[#DCFCE7] p-3 text-sm font-semibold leading-relaxed text-[#15803D]" role="status"><i data-lucide="circle-check" class="mt-0.5 h-4 w-4 shrink-0"></i><span></span></p>
+            </form>
+            <a href="login.html" class="mt-3 flex min-h-[3rem] w-full items-center justify-center rounded-xl bg-brand-600 px-4 text-sm font-bold text-white shadow-soft transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">Kembali ke login</a>
+          </section>
+        </div>
+      </div>
+      <p class="mt-5 text-center text-xs text-ink-500">© 2026 Webkita · Hubungkan bisnis Anda dengan developer terbaik</p>
+      <p class="mt-2 text-center text-xs text-ink-500">Pratinjau: tambahkan <code class="rounded bg-ink-100 px-1">?state=success|already|failed|expired|loading</code> di URL.</p>
+    </div>
+  </main>
+
+  <script>
+    lucide.createIcons({ attrs: { 'aria-hidden': 'true', focusable: 'false' } });
+
+    const q = new URLSearchParams(location.search);
+    const token = q.get('token');
+    let email = q.get('email');           // PRODUKSI: jangan simpan email di URL (bocor ke log/referrer). Cukup signed URL.
+    const forced = q.get('state');
+    const COOLDOWN = 60;                  // detik, samakan dengan throttle di backend
+    const $ = (s) => document.querySelector(s);
+    const live = $('#live');
+    const RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+    function show(name, variant) {
+      document.querySelectorAll('[data-state]').forEach(s => s.hidden = s.dataset.state !== name);
+      if (name === 'failed') setFailed(variant);
+      const h = document.querySelector('[data-state="' + name + '"] h1');
+      if (name !== 'loading') { h.focus({ preventScroll: true }); live.textContent = h.textContent; }
+    }
+
+    function setFailed(variant) {
+      const expired = variant === 'expired';
+      $('#h-failed').textContent = expired ? 'Link Kedaluwarsa' : 'Verifikasi Gagal';
+      $('#f-desc').textContent = expired
+        ? 'Link verifikasi ini sudah lewat masa berlakunya. Minta link baru di bawah.'
+        : 'Link verifikasi tidak valid atau sudah tidak bisa dipakai. Minta link baru di bawah.';
+      const known = !!email && RE.test(email);
+      $('#email-wrap').hidden = known;
+      $('#email-known').classList.toggle('hidden', !known);
+      if (known) {
+        const [u, d] = email.split('@');
+        $('#email-masked').textContent = u.slice(0, 1) + '***@' + d;
+      }
+    }
+
+    // ---- kirim ulang (simulasi) ----
+    let cool = 0, timer = null;
+    const btn = $('#r-btn'), label = $('#r-label');
+    function setCool(n) {
+      cool = n;
+      clearInterval(timer);
+      const paint = () => {
+        if (cool > 0) { btn.setAttribute('aria-disabled', 'true'); label.textContent = 'Kirim ulang dalam ' + cool + ' dtk'; }
+        else { btn.removeAttribute('aria-disabled'); label.textContent = 'Kirim ulang email verifikasi'; clearInterval(timer); }
+      };
+      paint();
+      if (n > 0) timer = setInterval(() => { cool--; paint(); }, 1000);
+    }
+    function err(msg) {
+      const e = $('#r-err'), i = $('#r-email');
+      if (msg) { e.querySelector('span').textContent = msg; e.classList.remove('hidden'); e.classList.add('flex'); i.setAttribute('aria-invalid', 'true'); }
+      else { e.classList.add('hidden'); e.classList.remove('flex'); i.removeAttribute('aria-invalid'); }
+    }
+    $('#r-email').addEventListener('input', () => err(''));
+    $('#resend').addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      if (cool > 0) return;
+      let target = email;
+      if (!$('#email-wrap').hidden) {
+        target = $('#r-email').value.trim();
+        if (!target) { err('Email wajib diisi.'); $('#r-email').focus(); return; }
+        if (!RE.test(target)) { err('Format email tidak valid.'); $('#r-email').focus(); return; }
+      }
+      err('');
+      // PRODUKSI: POST /email/verification-notification (throttle). Respons HARUS sama untuk email terdaftar/tidak (anti-enumerasi).
+      const m = $('#r-msg');
+      m.querySelector('span').textContent = 'Jika email terdaftar dan belum terverifikasi, link baru sudah dikirim. Cek juga folder spam.';
+      m.classList.remove('hidden'); m.classList.add('flex');
+      setCool(COOLDOWN);
+    });
+
+    // ---- tentukan state awal ----
+    // CATATAN: di produksi, status ditentukan SERVER (signed URL + hash), bukan dari ada/tidaknya parameter.
+    if (forced === 'loading') show('loading');
+    else if (['success', 'already', 'failed', 'expired'].includes(forced)) show(forced === 'expired' ? 'failed' : forced, forced);
+    else if (!token || !email) show('failed', 'invalid');
+    else setTimeout(() => show('success'), 1200);
+  </script>
+</body>
+</html>

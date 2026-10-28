@@ -1,8 +1,10 @@
-import React, { useState } from "react";
-import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Routes, Route, useNavigate, Navigate, useLocation } from "react-router-dom";
 import Layout from "../../components/Layout";
+import PageLoader from "../../components/ui/Spinner";
 import { UserProvider, useUser } from "../../provider/user_provider.jsx";
 import { ProjectProvider } from "../../provider/project_provider.jsx";
+import { PaymentProvider } from "../../provider/payment_provider.jsx";
 import Home from "../home/Home";
 import Login from "../auth/Login";
 import Register from "../auth/Register";
@@ -10,7 +12,6 @@ import ProfilePage from "../profile/ProfilePage";
 import CaraKerja from "../CaraKerja";
 import InvoicePage from "../InvoicePage";
 import Harga from "../Harga";
-import { PaymentProvider } from "../../provider/payment_provider.jsx";
 import Orderan from "../Orderan";
 import InformasiDetail from "../InformasiDetail";
 import VerifyEmail from "../auth/VerifyEmail";
@@ -21,16 +22,7 @@ import AdminDashboard from "../admin/AdminDashboard";
 
 const ADMIN_ROLES = ["admin", "developer"];
 
-const Spinner = () => (
-  <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-    <div style={{
-      width: 36, height: 36, borderRadius: "50%",
-      border: "3px solid #E5E7EB", borderTop: "3px solid #3B82F6",
-      animation: "spin 0.8s linear infinite",
-    }} />
-    <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-  </div>
-);
+const Spinner = () => <PageLoader className="min-h-screen" label="Memuat…" />;
 
 // Guard: hanya admin & developer
 // Pakai `initializing` (bukan `loading`), supaya guard ini tidak ikut ke-trigger
@@ -53,6 +45,13 @@ const GuestGuard = ({ children }) => {
   return children;
 };
 
+// Halaman yang butuh login (orderan, profil, form pesan, invoice)
+const AuthGuard = ({ children }) => {
+  const { user, initializing } = useUser();
+  if (initializing) return <PageLoader />;
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
 
 const AdminRedirect = ({ children }) => {
   const { user, initializing } = useUser();
@@ -61,19 +60,30 @@ const AdminRedirect = ({ children }) => {
   return children;
 };
 
+// Scroll ke atas setiap pindah halaman (kecuali tautan #hash)
+const ScrollToTop = () => {
+  const { pathname, hash } = useLocation();
+  useEffect(() => { if (!hash) window.scrollTo(0, 0); }, [pathname, hash]);
+  return null;
+};
+
 function AppRoutes() {
   const navigate = useNavigate();
 
   const [selectedPlanDetails, setSelectedPlanDetails] = useState(() => {
-    const saved = sessionStorage.getItem("selectedPlan");
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = sessionStorage.getItem("selectedPlan");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
   const [forgotData, setForgotData] = useState({ email: "" });
   const [verifiedData, setVerifiedData] = useState({ resetToken: "", email: "" });
 
   const handleNavigateToDetail = (plan) => {
     setSelectedPlanDetails(plan);
-    sessionStorage.setItem("selectedPlan", JSON.stringify(plan));
+    try { sessionStorage.setItem("selectedPlan", JSON.stringify(plan)); } catch { /* abaikan */ }
     navigate("/informasidetail");
   };
 
@@ -87,108 +97,81 @@ function AppRoutes() {
     navigate("/reset-password");
   };
 
-  const handleBackToHome = () => {
-    sessionStorage.removeItem("selectedPlan");
+  const clearPlan = () => {
+    try { sessionStorage.removeItem("selectedPlan"); } catch { /* abaikan */ }
     setSelectedPlanDetails(null);
-    navigate("/");
-  };
-
-  const handleBackToHarga = () => {
-    sessionStorage.removeItem("selectedPlan");
-    setSelectedPlanDetails(null);
-    navigate("/harga");
   };
 
   return (
-    <Routes>
-      {/* ── Admin ── */}
-      <Route path="/admin" element={
-        <AdminGuard>
-          <AdminDashboard />
-        </AdminGuard>
-      } />
+    <>
+      <ScrollToTop />
+      <Routes>
+        {/* ── Admin ── */}
+        <Route path="/admin/*" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
 
-      {/* ── Auth ── */}
-      <Route path="/login" element={
-        <GuestGuard>
-          <Login
-            onBackToHome={() => navigate("/")}
-            onForgotPassword={() => navigate("/forgot-password")}
-            onGoToRegister={() => navigate("/register")}
-            onGoToAdmin={() => navigate("/admin")}
+        {/* ── Auth ── */}
+        <Route path="/login" element={
+          <GuestGuard>
+            <Login
+              onBackToHome={() => navigate("/")}
+              onForgotPassword={() => navigate("/forgot-password")}
+              onGoToRegister={() => navigate("/register")}
+              onGoToAdmin={() => navigate("/admin")}
+            />
+          </GuestGuard>
+        } />
+        <Route path="/register" element={
+          <GuestGuard>
+            <Register onBackToHome={() => navigate("/")} onGoToLogin={() => navigate("/login")} />
+          </GuestGuard>
+        } />
+        <Route path="/forgot-password" element={
+          <ForgotPassword onBackToLogin={() => navigate("/login")} onOTPSent={handleOTPSent} />
+        } />
+        <Route path="/otp-password" element={
+          <VerifyOTP email={forgotData.email} onBackToForgot={() => navigate("/forgot-password")} onOTPVerified={handleOTPVerified} />
+        } />
+        <Route path="/reset-password" element={
+          <ResetPassword
+            resetToken={verifiedData.resetToken}
+            email={verifiedData.email}
+            onBackToVerify={() => navigate("/otp-password")}
+            onSuccess={() => navigate("/login")}
           />
-        </GuestGuard>
-      } />
-      <Route path="/register" element={
-        <GuestGuard>
-          <Register
-            onBackToHome={() => navigate("/")}
-            onGoToLogin={() => navigate("/login")}
-          />
-        </GuestGuard>
-      } />
-      <Route path="/forgot-password" element={
-        <ForgotPassword
-          onBackToLogin={() => navigate("/login")}
-          onOTPSent={handleOTPSent}
-        />
-      } />
-      <Route path="/otp-password" element={
-        <VerifyOTP
-          email={forgotData.email}
-          onBackToForgot={() => navigate("/forgot-password")}
-          onOTPVerified={handleOTPVerified}
-        />
-      } />
-      <Route path="/reset-password" element={
-        <ResetPassword
-          resetToken={verifiedData.resetToken}
-          email={verifiedData.email}
-          onBackToVerify={() => navigate("/otp-password")}
-          onSuccess={() => navigate("/login")}
-        />
-      } />
+        } />
 
-      {/* ── Public dengan Layout ── */}
-      <Route path="*" element={
-        <AdminRedirect>
-          <Layout
-            onLoginClick={() => navigate("/login")}
-            onRegisterClick={() => navigate("/register")}
-            onCaraKerjaClick={() => navigate("/carakerja")}
-            onHargaClick={() => navigate("/harga")}
-            onOrderanClick={() => navigate("/orderan")}
-            onProfileClick={() => navigate("/profile")}
-            onNavigateHome={() => navigate("/")}
-          >
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/carakerja" element={<CaraKerja onBackToHome={() => navigate("/")} />} />
-              <Route path="/harga" element={
-                <Harga
-                  onBackToHome={() => navigate("/")}
-                  onSelectPlan={handleNavigateToDetail}
-                />
-              } />
-              <Route path="/orderan" element={<Orderan onBackToHome={() => navigate("/")} />} />
-              <Route path="/profile" element={<ProfilePage onBackToHome={() => navigate("/")} />} />
-              <Route path="/invoice/:projectId" element={<InvoicePage />} />
-              <Route path="/informasidetail" element={
-                <InformasiDetail
-                  plan={selectedPlanDetails}
-                  onBackToHome={handleBackToHome}
-                  onBackToHarga={handleBackToHarga}
-                />
-              } />
-              <Route path="/auth/verify-email" element={
-                <VerifyEmail onGoToLogin={() => navigate("/")} />
-              } />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </Layout>
-        </AdminRedirect>
-      } />
-    </Routes>
+        {/* ── Verifikasi email (halaman mandiri) ── */}
+        <Route path="/auth/verify-email" element={<VerifyEmail onGoToLogin={() => navigate("/login")} />} />
+
+        {/* ── Invoice (halaman mandiri, tanpa navbar/footer agar rapi saat dicetak) ── */}
+        <Route path="/invoice/:projectId" element={<AuthGuard><InvoicePage /></AuthGuard>} />
+
+        {/* ── Publik dengan Layout ── */}
+        <Route path="*" element={
+          <AdminRedirect>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/carakerja" element={<CaraKerja onBackToHome={() => navigate("/")} />} />
+                <Route path="/harga" element={<Harga onSelectPlan={handleNavigateToDetail} />} />
+                <Route path="/orderan" element={<AuthGuard><Orderan /></AuthGuard>} />
+                <Route path="/profile" element={<AuthGuard><ProfilePage /></AuthGuard>} />
+                <Route path="/informasidetail" element={
+                  <AuthGuard>
+                    <InformasiDetail
+                      plan={selectedPlanDetails}
+                      onBackToHome={() => { clearPlan(); navigate("/"); }}
+                      onBackToHarga={() => { clearPlan(); navigate("/harga"); }}
+                    />
+                  </AuthGuard>
+                } />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </Layout>
+          </AdminRedirect>
+        } />
+      </Routes>
+    </>
   );
 }
 

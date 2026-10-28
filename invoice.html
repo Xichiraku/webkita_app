@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Invoice – Webkita</title>
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS (CDN untuk prototipe. Produksi Laravel: Tailwind via Vite) -->
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '"Segoe UI"', 'Roboto', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#EFF5FF', 100: '#DCE8FD', 200: '#BFD5FB', 300: '#93B8F7', 400: '#5F94F0', 500: '#3B73E6', 600: '#2559CC', 700: '#1D46A5', 800: '#1B3A82', 900: '#1A3068', 950: '#111F45' },
+            ink: { 50: '#F4F7FB', 100: '#EAF0F7', 200: '#D9E2EE', 300: '#BFCBDC', 400: '#8E9DB5', 500: '#66758F', 600: '#4B5A73', 700: '#36445A', 800: '#232F42', 900: '#152033', 950: '#0C1524' },
+          },
+          boxShadow: {
+            soft: '0 10px 30px -12px rgba(26, 48, 104, 0.18), 0 2px 6px rgba(26, 48, 104, 0.06)',
+            lift: '0 28px 50px -22px rgba(26, 48, 104, 0.32), 0 4px 10px rgba(26, 48, 104, 0.06)',
+          },
+          keyframes: {
+            blob: { '0%,100%': { transform: 'translate(0,0) scale(1)' }, '50%': { transform: 'translate(20px,-16px) scale(1.08)' } },
+            rise: { from: { opacity: '0', transform: 'translateY(18px)' }, to: { opacity: '1', transform: 'none' } },
+            shake: { '0%,100%': { transform: 'translateX(0)' }, '20%,60%': { transform: 'translateX(-6px)' }, '40%,80%': { transform: 'translateX(6px)' } },
+          },
+          animation: {
+            blob: 'blob 14s ease-in-out infinite',
+            rise: 'rise .7s cubic-bezier(.22,1,.36,1) both',
+            shake: 'shake .4s ease-in-out',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+    .pop { animation: pop .5s cubic-bezier(.34,1.56,.64,1) both; }
+    @keyframes stepIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+    .step-in { animation: stepIn .4s cubic-bezier(.22,1,.36,1) both; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  
+    @keyframes spin2 { to { transform: rotate(360deg); } }
+    .spin2 { animation: spin2 .8s linear infinite; }
+    [hidden] { display: none !important; }
+    @media print {
+      @page { size: A4; margin: 12mm; }
+      html, body { background: #fff !important; }
+      .keep-color { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+  </style>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+</head>
+<body class="bg-ink-50 font-sans text-ink-900 antialiased selection:bg-brand-200 print:bg-white">
+  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-white to-ink-50 print:hidden" aria-hidden="true">
+    <div class="absolute -left-24 top-10 h-80 w-80 rounded-full bg-brand-100 opacity-80 blur-3xl animate-blob"></div>
+    <div class="absolute -right-24 bottom-10 h-96 w-96 rounded-full bg-brand-200/60 blur-3xl animate-blob" style="animation-delay:-7s"></div>
+  </div>
+
+  <div class="mx-auto max-w-3xl px-4 py-8 sm:py-10 print:max-w-none print:p-0">
+
+    <!-- toolbar -->
+    <nav class="no-print mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden" aria-label="Aksi invoice">
+      <button id="back" type="button" class="inline-flex min-h-[2.75rem] items-center gap-2 rounded-xl border border-ink-300 bg-white px-4 text-sm font-bold text-ink-800 transition hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"><i data-lucide="arrow-left" class="h-4 w-4"></i> Kembali</button>
+      <div class="flex flex-wrap gap-2">
+        <button id="pay" type="button" hidden class="inline-flex min-h-[2.75rem] items-center gap-2 rounded-xl bg-brand-600 px-4 text-sm font-bold text-white shadow-soft transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"><i data-lucide="credit-card" class="h-4 w-4"></i> Bayar sekarang</button>
+        <button id="print" type="button" class="inline-flex min-h-[2.75rem] items-center gap-2 rounded-xl border border-brand-700 bg-white px-4 text-sm font-bold text-brand-700 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"><i data-lucide="printer" class="h-4 w-4"></i> Cetak / Simpan PDF</button>
+      </div>
+    </nav>
+    <p class="mb-3 text-right text-xs text-ink-500 print:hidden">Pratinjau · data dummy · <code class="rounded bg-ink-100 px-1">?status=paid</code> atau <code class="rounded bg-ink-100 px-1">?state=error|loading</code></p>
+
+    <!-- loading -->
+    <main id="s-loading" class="rounded-3xl border border-ink-200 bg-white p-10 text-center shadow-soft">
+      <span class="spin2 mx-auto mb-4 block h-10 w-10 rounded-full border-[3px] border-brand-100 border-t-brand-600" aria-hidden="true"></span>
+      <p class="text-sm font-semibold text-ink-600">Memuat invoice…</p>
+    </main>
+
+    <!-- error -->
+    <main id="s-error" hidden class="rounded-3xl border border-ink-200 bg-white p-10 text-center shadow-soft">
+      <span class="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#FEE2E2] text-[#B91C1C]"><i data-lucide="file-x" class="h-7 w-7"></i></span>
+      <h1 class="text-xl font-extrabold tracking-tight">Invoice tidak dapat dimuat</h1>
+      <p class="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-600" role="alert">Invoice tidak ditemukan atau kamu tidak punya akses ke invoice ini.</p>
+      <a href="orderan.html" class="mt-6 inline-flex min-h-[2.75rem] items-center justify-center rounded-xl bg-brand-600 px-5 text-sm font-bold text-white shadow-soft transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">Ke Orderan Saya</a>
+    </main>
+
+    <!-- invoice -->
+    <article id="invoice" hidden class="overflow-hidden rounded-3xl bg-white shadow-lift print:rounded-none print:shadow-none" aria-labelledby="inv-no">
+      <header class="keep-color bg-gradient-to-br from-brand-900 to-brand-600 px-6 py-8 text-white sm:px-11 sm:py-9 print:px-8 print:py-6">
+        <div class="flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <p class="text-3xl font-black tracking-tight">Webkita</p>
+            <p class="mt-1 max-w-[15rem] text-xs leading-relaxed text-brand-100">Hubungkan bisnis Anda dengan developer terbaik</p>
+          </div>
+          <div class="text-left sm:text-right">
+            <p class="text-xs font-bold uppercase tracking-[.14em] text-brand-100">Invoice</p>
+            <h1 id="inv-no" class="mb-2 mt-1 text-xl font-extrabold"></h1>
+            <span id="chip" class="keep-color inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold tracking-wide"></span>
+          </div>
+        </div>
+      </header>
+
+      <div class="px-6 py-8 sm:px-11 sm:py-9 print:px-8 print:py-6">
+        <section class="mb-7 grid gap-4 border-b border-ink-100 pb-7 sm:grid-cols-3 sm:gap-5" aria-label="Informasi invoice">
+          <div><p class="mb-1 text-xs font-extrabold uppercase tracking-wider text-ink-500">Tanggal invoice</p><p id="d-inv" class="text-sm font-semibold"></p></div>
+          <div><p class="mb-1 text-xs font-extrabold uppercase tracking-wider text-ink-500">Tanggal proyek</p><p id="d-proj" class="text-sm font-semibold"></p></div>
+          <div><p class="mb-1 text-xs font-extrabold uppercase tracking-wider text-ink-500">ID proyek</p><p id="d-id" class="break-all text-sm font-semibold"></p></div>
+        </section>
+
+        <section class="mb-7 grid gap-5 sm:grid-cols-2 sm:gap-6">
+          <div>
+            <p class="mb-3 text-xs font-extrabold uppercase tracking-wider text-ink-500">Dari</p>
+            <div class="flex items-center gap-3">
+              <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><i data-lucide="building-2" class="h-5 w-5"></i></span>
+              <div><p class="text-sm font-bold">Webkita</p><p class="text-xs text-ink-600">webkita.com</p></div>
+            </div>
+          </div>
+          <div>
+            <p class="mb-3 text-xs font-extrabold uppercase tracking-wider text-ink-500">Kepada</p>
+            <div class="flex items-center gap-3">
+              <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><i data-lucide="user-round" class="h-5 w-5"></i></span>
+              <div class="min-w-0"><p id="c-name" class="truncate text-sm font-bold"></p><p id="c-phone" class="text-xs text-ink-600"></p></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-7 rounded-2xl border border-ink-100 bg-ink-50 p-4 sm:p-5">
+          <h2 class="mb-3 text-sm font-extrabold text-ink-800">Rincian Proyek</h2>
+          <table class="w-full border-collapse text-sm">
+            <thead><tr class="border-b border-ink-200 text-left text-xs font-bold uppercase tracking-wider text-ink-500">
+              <th scope="col" class="py-2 pr-3">Deskripsi</th>
+              <th scope="col" class="hidden px-3 py-2 text-center sm:table-cell">Paket</th>
+              <th scope="col" class="py-2 pl-3 text-right">Total</th>
+            </tr></thead>
+            <tbody><tr class="align-top">
+              <td class="py-4 pr-3"><p id="p-title" class="font-bold"></p><p id="p-cat" class="mt-1 text-xs text-ink-600"></p><span id="p-plan-m" class="keep-color mt-2 inline-block rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700 sm:hidden"></span></td>
+              <td class="hidden px-3 py-4 text-center sm:table-cell"><span id="p-plan" class="keep-color inline-block rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700"></span></td>
+              <td id="p-total" class="whitespace-nowrap py-4 pl-3 text-right font-semibold"></td>
+            </tr></tbody>
+          </table>
+        </section>
+
+        <section class="mb-7 ml-auto w-full sm:max-w-xs" aria-label="Total pembayaran">
+          <div class="flex justify-between gap-4 border-b border-ink-100 py-2 text-sm text-ink-600"><span>Subtotal</span><strong id="t-sub" class="text-ink-800"></strong></div>
+          <div class="flex justify-between gap-4 border-b border-ink-100 py-2 text-sm text-ink-600"><span>Pajak (0%)</span><strong class="text-ink-800">Rp 0</strong></div>
+          <div class="flex items-baseline justify-between gap-4 pt-3 font-extrabold"><span class="text-base">Total</span><strong id="t-total" class="text-xl text-brand-800"></strong></div>
+        </section>
+
+        <!-- sudah lunas -->
+        <section id="paid-banner" hidden class="keep-color mb-7 flex items-start gap-3 rounded-2xl border border-[#86EFAC] bg-[#DCFCE7] p-4 text-[#15803D]">
+          <i data-lucide="circle-check" class="mt-0.5 h-5 w-5 shrink-0"></i>
+          <div><p class="text-sm font-extrabold">Pembayaran Telah Diterima</p><p class="mt-0.5 text-sm">Terima kasih! Pembayaran kamu sudah dikonfirmasi<span id="paid-at"></span>.</p><p class="mt-1 text-xs">Ref. pembayaran: <span id="paid-ref" class="font-bold"></span></p></div>
+        </section>
+
+        <!-- belum bayar -->
+        <section id="unpaid-banner" hidden class="keep-color mb-7 flex items-start gap-3 rounded-2xl border border-[#FCD34D] bg-[#FEF3C7] p-4 text-[#B45309] print:break-inside-avoid">
+          <i data-lucide="clock" class="mt-0.5 h-5 w-5 shrink-0"></i>
+          <div><p class="text-sm font-extrabold">Menunggu pembayaran</p><p class="mt-0.5 text-sm">Selesaikan pembayaran lewat tombol <strong>Bayar sekarang</strong>. Status invoice berubah otomatis setelah pembayaran terkonfirmasi.</p></div>
+        </section>
+
+        <footer class="border-t border-ink-100 pt-5 text-center text-xs leading-relaxed text-ink-500">Terima kasih telah mempercayakan proyek Anda kepada <strong class="text-ink-700">Webkita</strong>. Jika ada pertanyaan, hubungi kami di <a href="mailto:support@webkita.com" class="font-semibold text-brand-700 underline">support@webkita.com</a></footer>
+      </div>
+    </article>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite" class="pointer-events-none fixed bottom-6 left-1/2 z-50 hidden -translate-x-1/2 rounded-xl bg-ink-900 px-4 py-3 text-sm font-semibold text-white shadow-lift print:hidden"></div>
+
+  <script>
+    lucide.createIcons({ attrs: { 'aria-hidden': 'true', focusable: 'false' } });
+
+    const q = new URLSearchParams(location.search);
+    // PRODUKSI: route /invoice/{project}. Server WAJIB cek kepemilikan (policy) agar ID tidak bisa ditebak (IDOR).
+    const projectId = q.get('projectId') || (location.pathname.match(/\/invoice\/([^/]+)\/?$/) || [])[1] || '0001';
+    const forced = q.get('state');
+    const isPaid = q.get('status') === 'paid';
+    const $ = (id) => document.getElementById(id);
+
+    const rupiah = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(v) || 0);
+    const tgl = (v) => { const d = new Date(v); return !v || isNaN(d) ? '–' : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }); };
+    const set = (id, v) => { $(id).textContent = (v == null || v === '') ? '–' : String(v); };
+
+    // Data dummy. PRODUKSI: nomor & tanggal invoice disimpan saat invoice DITERBITKAN (bukan new Date() tiap dibuka),
+    // dan "amount" = harga final yang ditetapkan admin untuk proyek, bukan rentang harga paket.
+    const inv = {
+      number: 'INV-' + String(projectId).padStart(4, '0') + '-2026',
+      issued_at: '2026-10-21T09:00:00',
+      created_at: '2026-10-20T09:00:00',
+      paid_at: '2026-10-22T14:30:00',
+      pay_ref: 'DEMO-WEBKITA-001',
+      contact_name: 'Demo Webkita',
+      contact_phone: '+62 812-0000-0000',
+      title: 'Website Company Profile',
+      category: 'Website',
+      plan: 'Profesional',
+      amount: 2500000,
+    };
+
+    function render() {
+      document.title = 'Invoice ' + inv.number + ' – Webkita';
+      set('inv-no', inv.number);
+      set('d-inv', tgl(inv.issued_at)); set('d-proj', tgl(inv.created_at)); set('d-id', '#' + projectId);
+      set('c-name', inv.contact_name); set('c-phone', inv.contact_phone);
+      set('p-title', inv.title); set('p-cat', inv.category); set('p-plan', inv.plan); set('p-plan-m', inv.plan);
+      set('p-total', rupiah(inv.amount)); set('t-sub', rupiah(inv.amount)); set('t-total', rupiah(inv.amount));
+      const chip = $('chip');
+      if (isPaid) {
+        chip.className = 'keep-color inline-flex items-center gap-1.5 rounded-full bg-[#DCFCE7] px-3 py-1 text-xs font-extrabold tracking-wide text-[#15803D]';
+        chip.innerHTML = '<i data-lucide="circle-check" class="h-3.5 w-3.5"></i>LUNAS';
+        $('paid-at').textContent = ' pada ' + tgl(inv.paid_at); set('paid-ref', inv.pay_ref);
+      } else {
+        chip.className = 'keep-color inline-flex items-center gap-1.5 rounded-full bg-[#FEF3C7] px-3 py-1 text-xs font-extrabold tracking-wide text-[#B45309]';
+        chip.innerHTML = '<i data-lucide="clock" class="h-3.5 w-3.5"></i>MENUNGGU PEMBAYARAN';
+      }
+      $('paid-banner').hidden = !isPaid;
+      $('unpaid-banner').hidden = isPaid;
+      $('pay').hidden = isPaid;
+      lucide.createIcons({ attrs: { 'aria-hidden': 'true', focusable: 'false' } });
+    }
+
+    function toast(msg) {
+      const t = $('toast'); t.textContent = msg; t.classList.remove('hidden');
+      clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 3200);
+    }
+
+    function ready(ok) {
+      $('s-loading').hidden = true;
+      if (ok) { render(); $('invoice').hidden = false; }
+      else $('s-error').hidden = false;
+    }
+
+    $('back').addEventListener('click', () => { if (history.length > 1) history.back(); else location.href = 'orderan.html'; });
+    $('print').addEventListener('click', () => window.print());
+    // PRODUKSI: buka pembayaran (mis. Snap token dari server). Status lunas HANYA dari webhook gateway, bukan dari klik ini.
+    $('pay').addEventListener('click', () => toast('Demo: di sini membuka jendela pembayaran.'));
+
+    if (forced === 'loading') { /* tetap loading */ }
+    else setTimeout(() => ready(forced !== 'error'), 600);
+  </script>
+</body>
+</html>

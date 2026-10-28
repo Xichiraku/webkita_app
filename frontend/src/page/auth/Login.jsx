@@ -1,176 +1,139 @@
-import { ArrowLeft, Eye, EyeOff, Mail, Lock } from "lucide-react";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { CircleAlert, CircleCheck, Mail } from "lucide-react";
 import { useUser } from "../../provider/user_provider";
+import FieldError from "../../components/ui/FieldError";
+import { ButtonSpinner } from "../../components/ui/Spinner";
+import AuthShell from "./AuthShell";
+import PasswordInput from "./PasswordInput";
+import { EMAIL_RE } from "../../utils/format";
+import { BTN_PRIMARY, INPUT, LABEL } from "../../utils/ui";
+
+const RULES = {
+  email: (v) => (!v ? "Email wajib diisi." : !EMAIL_RE.test(v) ? "Format email tidak valid." : ""),
+  password: (v) => (v ? "" : "Password wajib diisi."),
+};
 
 function Login({ onBackToHome, onForgotPassword, onGoToRegister, onGoToAdmin }) {
   const { loginUser } = useUser();
+  const cardRef = useRef(null);
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [values, setValues] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [serverError, setServerError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const check = (k, v) => setErrors((e) => ({ ...e, [k]: RULES[k](k === "email" ? v.trim() : v) }));
+
+  const onChange = (k) => (e) => {
+    const v = e.target.value;
+    setValues((s) => ({ ...s, [k]: v }));
+    setServerError("");
+    if (errors[k]) check(k, v);
+  };
+
+  const shake = () => {
+    const el = cardRef.current; if (!el) return;
+    el.classList.remove("animate-shake"); void el.offsetWidth; el.classList.add("animate-shake");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setServerError("");
     setSuccess("");
-
-    if (!email || !password) {
-      setError("Email dan password harus diisi.");
-      return;
-    }
-    if (!email.includes("@")) {
-      setError("Format email tidak valid.");
-      return;
-    }
+    const errs = { email: RULES.email(values.email.trim()), password: RULES.password(values.password) };
+    setErrors(errs);
+    const bad = ["email", "password"].find((k) => errs[k]);
+    if (bad) { document.getElementById(bad)?.focus(); shake(); return; }
 
     setLoading(true);
-    const result = await loginUser(email.trim(), password);
+    const result = await loginUser(values.email.trim(), values.password);
     setLoading(false);
 
     if (!result.success) {
-      setError(result.message || "Login gagal. Periksa email dan password.");
+      setServerError(result.message || "Login gagal. Periksa email dan password.");
+      shake();
       return;
     }
 
-    setSuccess("Login berhasil!");
-
-    // Redirect berdasarkan role
+    setSuccess("Login berhasil! Mengalihkan…");
     setTimeout(() => {
       const role = result.user?.role;
-      if (role === "admin" || role === "developer") {
-        onGoToAdmin?.();
-      } else {
-        onBackToHome();
-      }
+      if (role === "admin" || role === "developer") onGoToAdmin?.();
+      else onBackToHome?.();
     }, 800);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full space-y-8">
-        {/* Back */}
-        <button
-          onClick={onBackToHome}
-          className="inline-flex items-center text-gray-600 hover:text-gray-900 transition font-medium"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Kembali ke Beranda
-        </button>
+    <AuthShell
+      title="Masuk ke Akun"
+      subtitle="Pantau proyek website Anda di Project Workspace."
+      onBack={onBackToHome}
+      cardRef={cardRef}
+      footer={
+        <p className="mt-6 text-center text-sm text-ink-600">
+          Belum punya akun?{" "}
+          <button type="button" onClick={onGoToRegister} className="font-bold text-brand-700 hover:underline">Daftar sekarang</button>
+        </p>
+      }
+    >
+      <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
+        {serverError && (
+          <p className="flex items-start gap-2.5 rounded-xl bg-[#FEF2F2] p-3.5 text-sm font-semibold text-[#7F1D1D]" role="alert">
+            <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#B91C1C]" aria-hidden="true" /> {serverError}
+          </p>
+        )}
+        {success && (
+          <p className="flex items-start gap-2.5 rounded-xl bg-[#DCFCE7] p-3.5 text-sm font-semibold text-[#14532D]" role="status">
+            <CircleCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#15803D]" aria-hidden="true" /> {success}
+          </p>
+        )}
 
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">
-            Masuk ke Akun
-          </h2>
-
-          {/* Error */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
-
-          {/* Success */}
-          {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-800">{success}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(""); }}
-                  disabled={loading}
-                  placeholder="nama@email.com"
-                  autoComplete="email"
-                  className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 outline-none transition disabled:bg-gray-100"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                  disabled={loading}
-                  placeholder="Masukkan password"
-                  autoComplete="current-password"
-                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 outline-none transition disabled:bg-gray-100"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Forgot password */}
-            <div className="text-right">
-              <button
-                type="button"
-                onClick={onForgotPassword}
-                className="text-sm text-gray-600 hover:text-gray-900 hover:underline transition"
-              >
-                Lupa password?
-              </button>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
+        <div>
+          <label htmlFor="email" className={LABEL}>Email <span className="text-[#B91C1C]" aria-hidden="true">*</span></label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-500" aria-hidden="true" />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="nama@email.com"
+              autoComplete="email"
+              value={values.email}
+              onChange={onChange("email")}
+              onBlur={(e) => e.target.value && check("email", e.target.value)}
               disabled={loading}
-              className="w-full bg-gray-900 text-white py-4 rounded-lg font-bold hover:bg-gray-800 transition shadow-lg active:scale-[0.98] disabled:bg-gray-400 disabled:scale-100 flex items-center justify-center"
-            >
-              {loading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Memproses...
-                </span>
-              ) : (
-                "Masuk"
-              )}
-            </button>
-          </form>
-
-          {/* Register */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Belum punya akun?{" "}
-              <button
-                onClick={onGoToRegister}
-                className="font-semibold text-gray-900 hover:underline transition"
-              >
-                Daftar sekarang
-              </button>
-            </p>
+              aria-invalid={errors.email ? true : undefined}
+              aria-describedby="email-err"
+              className={`${INPUT} pl-11`}
+            />
           </div>
+          <FieldError id="email-err" msg={errors.email} />
         </div>
-      </div>
-    </div>
+
+        <PasswordInput
+          id="password"
+          label="Password"
+          placeholder="Masukkan password"
+          autoComplete="current-password"
+          value={values.password}
+          onChange={onChange("password")}
+          disabled={loading}
+          error={errors.password}
+        />
+
+        <div className="flex justify-end">
+          <button type="button" onClick={onForgotPassword} className="rounded text-sm font-semibold text-brand-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">
+            Lupa password?
+          </button>
+        </div>
+
+        <button type="submit" disabled={loading} className={`h-12 w-full text-[15px] ${BTN_PRIMARY}`}>
+          {loading && <ButtonSpinner />}
+          {loading ? "Memproses…" : "Masuk"}
+        </button>
+      </form>
+    </AuthShell>
   );
 }
 

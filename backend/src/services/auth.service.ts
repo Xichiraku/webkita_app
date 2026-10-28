@@ -8,6 +8,11 @@ import type {
   UserResponse,
 } from '../types/user'
 import { generateAccessToken } from '../utils/jwt'
+import { generateOtp, validatePassword, validateUsername } from '../utils/validation'
+
+// Kode OTP reset password: berlaku 5 menit, maksimal 5 percobaan salah (sama dengan tampilan frontend)
+const OTP_TTL_MINUTES = 5
+const OTP_MAX_ATTEMPTS = 5
 
 type EmailConfig = {
   resendApiKey: string
@@ -127,14 +132,14 @@ async function sendOtpEmail(
               </span>
             </div>
           </div>
-          <p>Kode ini berlaku selama <strong>10 menit</strong>.</p>
+          <p>Kode ini berlaku selama <strong>5 menit</strong>.</p>
           <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 20px 0;" />
           <p style="color: #9CA3AF; font-size: 12px;">
             Jika Anda tidak meminta reset password, abaikan email ini.
           </p>
         </div>
       `,
-      text: `Halo ${toName}! Kode OTP reset password Anda: ${otp} (berlaku 10 menit)`,
+      text: `Halo ${toName}! Kode OTP reset password Anda: ${otp} (berlaku 5 menit)`,
     }),
   })
 
@@ -261,13 +266,11 @@ export async function registerUser(
     throw appError('Format data tidak valid', 400)
   }
 
-  if (req.username.length < 3) {
-    throw appError('Username minimal 3 karakter', 400, 'username')
-  }
+  const usernameInvalid = validateUsername(req.username)
+  if (usernameInvalid) throw appError(usernameInvalid, 400, 'username')
 
-  if (req.password.length < 8) {
-    throw appError('Password minimal 8 karakter', 400, 'password')
-  }
+  const passwordError = validatePassword(req.password)
+  if (passwordError) throw appError(passwordError, 400, 'password')
 
   const { count: emailCount, error: emailError } = await supabase
     .from('users')
@@ -411,15 +414,16 @@ export async function forgotPassword(
     throw appError('Email tidak ditemukan', 404, 'email')
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString()
+  const otp = generateOtp()
   const otpExpiresAt = new Date()
-  otpExpiresAt.setMinutes(otpExpiresAt.getMinutes() + 10)
+  otpExpiresAt.setMinutes(otpExpiresAt.getMinutes() + OTP_TTL_MINUTES)
 
   const { error: updateError } = await supabase
     .from('users')
     .update({
       reset_otp: otp,
       reset_otp_expires_at: otpExpiresAt.toISOString(),
+      reset_otp_attempts: 0,
     })
     .eq('id', user.id)
 
@@ -442,7 +446,7 @@ export async function verifyOtp(
 
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, reset_otp, reset_otp_expires_at')
+    .select('id, reset_otp, reset_otp_expires_at, reset_otp_attempts')
     .eq('email', email)
     .is('deleted_at', null)
     .single()
@@ -451,12 +455,33 @@ export async function verifyOtp(
     throw appError('Email tidak ditemukan', 404, 'email')
   }
 
-  if (!user.reset_otp || user.reset_otp !== otp) {
-    throw appError('OTP tidak valid', 400, 'otp')
+  if (!user.reset_otp) {
+    throw appError('Kode OTP tidak ditemukan atau sudah dipakai. Minta kode baru.', 400, 'otp')
   }
 
-  if (new Date(user.reset_otp_expires_at) < new Date()) {
+  if ((user.reset_otp_attempts ?? 0) >= OTP_MAX_ATTEMPTS) {
+    throw appError('Terlalu banyak percobaan salah. Minta kode OTP baru.', 400, 'otp')
+  }
+
+  if (!user.reset_otp_expires_at || new Date(user.reset_otp_expires_at) < new Date()) {
     throw appError('OTP sudah kadaluarsa', 400, 'otp')
+  }
+
+  if (user.reset_otp !== String(otp)) {
+    const attempts = (user.reset_otp_attempts ?? 0) + 1
+    // OTP dihanguskan setelah batas percobaan tercapai
+    await supabase
+      .from('users')
+      .update(attempts >= OTP_MAX_ATTEMPTS
+        ? { reset_otp: null, reset_otp_expires_at: null, reset_otp_attempts: 0 }
+        : { reset_otp_attempts: attempts })
+      .eq('id', user.id)
+    const left = OTP_MAX_ATTEMPTS - attempts
+    throw appError(
+      left > 0 ? `OTP tidak valid. Sisa percobaan: ${left}` : 'Terlalu banyak percobaan salah. Minta kode OTP baru.',
+      400,
+      'otp'
+    )
   }
 
   const resetToken = generateSecureToken(32)
@@ -468,6 +493,7 @@ export async function verifyOtp(
     .update({
       reset_otp: null,
       reset_otp_expires_at: null,
+      reset_otp_attempts: 0,
       verification_token: resetToken,
       token_expires_at: resetTokenExpiresAt.toISOString(),
     })
@@ -489,13 +515,12 @@ export async function resetPassword(
     throw appError('Token dan password tidak boleh kosong', 400)
   }
 
-  if (newPassword.length < 8) {
-    throw appError('Password minimal 8 karakter', 400, 'password')
-  }
+  const passwordError = validatePassword(newPassword)
+  if (passwordError) throw appError(passwordError, 400, 'password')
 
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, token_expires_at')
+    .select('id, token_expires_at, token_version')
     .eq('verification_token', resetToken)
     .is('deleted_at', null)
     .single()
@@ -516,6 +541,8 @@ export async function resetPassword(
       password: hashedPassword,
       verification_token: null,
       token_expires_at: null,
+      // naikkan token_version: semua sesi login lama otomatis ditolak setelah password diganti
+      token_version: (user.token_version ?? 0) + 1,
     })
     .eq('id', user.id)
 

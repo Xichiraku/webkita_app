@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paket Layanan – Webkita</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS (CDN, untuk prototipe. Untuk produksi Laravel: pakai Tailwind via Vite) -->
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '"Segoe UI"', 'Roboto', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#EFF5FF', 100: '#DCE8FD', 200: '#BFD5FB', 300: '#93B8F7', 400: '#5F94F0', 500: '#3B73E6', 600: '#2559CC', 700: '#1D46A5', 800: '#1B3A82', 900: '#1A3068', 950: '#111F45' },
+            ink: { 50: '#F4F7FB', 100: '#EAF0F7', 200: '#D9E2EE', 300: '#BFCBDC', 400: '#8E9DB5', 500: '#66758F', 600: '#4B5A73', 700: '#36445A', 800: '#232F42', 900: '#152033', 950: '#0C1524' },
+          },
+          boxShadow: {
+            soft: '0 10px 30px -12px rgba(26, 48, 104, 0.18), 0 2px 6px rgba(26, 48, 104, 0.06)',
+            lift: '0 22px 40px -18px rgba(26, 48, 104, 0.30), 0 4px 10px rgba(26, 48, 104, 0.06)',
+          },
+          keyframes: {
+            blob: { '0%,100%': { transform: 'translate(0,0) scale(1)' }, '50%': { transform: 'translate(20px,-16px) scale(1.08)' } },
+            rise: { from: { opacity: '0', transform: 'translateY(14px)' }, to: { opacity: '1', transform: 'none' } },
+            pop: { '0%': { transform: 'scale(.6)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
+          },
+          animation: {
+            blob: 'blob 14s ease-in-out infinite',
+            rise: 'rise .45s cubic-bezier(.22,1,.36,1) both',
+            pop: 'pop .35s cubic-bezier(.34,1.56,.64,1) both',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    @keyframes menuIn { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+    .menu-in { animation: menuIn .18s cubic-bezier(.22,1,.36,1) both; transform-origin: top right; }
+    
+    body { background-image: radial-gradient(900px 520px at 88% -6%, #DCE8FD 0%, transparent 62%), radial-gradient(760px 520px at -4% 38%, #E3EDFE 0%, transparent 58%), radial-gradient(700px 500px at 60% 105%, #E8F0FE 0%, transparent 60%); background-attachment: fixed; }
+    .card { background: rgba(255,255,255,.82); border: 1px solid rgba(255,255,255,.95); box-shadow: 0 1px 0 #fff inset, 0 14px 34px -16px rgba(29,70,165,.24), 0 2px 6px rgba(21,32,51,.04); backdrop-filter: blur(8px); }
+    .tile { background: linear-gradient(145deg, #EFF5FF, #DCE8FD); box-shadow: 0 1px 0 #fff inset, 0 6px 14px -8px rgba(37,89,204,.45); }
+    @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 16px) scale(.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+    .toast-in { animation: toastIn .35s cubic-bezier(.34,1.56,.64,1) both; }
+    @keyframes rowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .row-in { animation: rowIn .45s cubic-bezier(.22,1,.36,1) both; animation-delay: var(--d, 0ms); }
+    @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    .bar-g { transform-box: fill-box; transform-origin: bottom; animation: grow .7s cubic-bezier(.22,1,.36,1) both; animation-delay: var(--d, 0ms); }
+    @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+    .line-draw { stroke-dasharray: 1; stroke-dashoffset: 0; animation: draw 1.1s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .fade-in { animation: fadeIn .6s ease both; animation-delay: var(--d, 0ms); }
+    dialog::backdrop { background: rgba(12, 21, 36, .5); backdrop-filter: blur(5px); }
+    dialog[open] { animation: rise .3s cubic-bezier(.22,1,.36,1) both; }
+    .scroll-thin::-webkit-scrollbar { height: 8px; width: 8px; } .scroll-thin::-webkit-scrollbar-thumb { background: #BFCBDC; border-radius: 8px; }
+    [data-tip] { cursor: default; }
+    .grid > * { min-width: 0; }
+    @media (prefers-reduced-motion: reduce) { .bar-g, .line-draw, .row-in, .fade-in { animation: none !important; } }
+
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body class="bg-ink-50 font-sans text-ink-900 antialiased selection:bg-brand-200">
+  <a href="#utama" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[90] focus:rounded-lg focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-white">Lewati ke konten utama</a>
+  <div id="overlay" class="fixed inset-0 z-40 hidden bg-ink-950/50 backdrop-blur-sm lg:hidden" aria-hidden="true"></div>
+
+  <aside id="sidebar" class="card fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col rounded-r-3xl transition-transform duration-300 lg:inset-y-4 lg:left-4 lg:translate-x-0 lg:rounded-3xl" aria-label="Menu admin">
+    <div class="flex items-center justify-between gap-3 px-5 pb-3 pt-6">
+      <a href="admin.html" class="flex items-center gap-3 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400">
+        <span class="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-lg font-extrabold text-white shadow-soft">W</span>
+        <span class="leading-tight"><span class="block text-lg font-extrabold text-ink-900">Webkita</span><span class="block text-xs font-semibold text-ink-600">Admin Panel</span></span>
+      </a>
+      <button id="sb-close" type="button" class="grid h-9 w-9 place-items-center rounded-xl border border-ink-200 text-ink-700 transition hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 lg:hidden" aria-label="Tutup menu"><i data-lucide="x" class="h-4 w-4"></i></button>
+    </div>
+
+    <nav class="mt-3 flex-1 space-y-1.5 overflow-y-auto px-3" aria-label="Navigasi admin"><a href="admin.html" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="layout-dashboard" class="h-[18px] w-[18px]"></i> Dashboard </a><a href="admin-orderan.html" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="package" class="h-[18px] w-[18px]"></i> Orderan <span id="nav-orders" class="ml-auto grid min-w-[1.4rem] place-items-center rounded-full bg-ink-100 text-ink-700 px-1.5 text-xs font-bold">0</span></a><a href="admin-pengguna.html" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="users" class="h-[18px] w-[18px]"></i> Pengguna <span id="nav-users" class="ml-auto grid min-w-[1.4rem] place-items-center rounded-full bg-ink-100 text-ink-700 px-1.5 text-xs font-bold">0</span></a><a href="admin-transaksi.html" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="credit-card" class="h-[18px] w-[18px]"></i> Transaksi <span id="nav-trx" class="ml-auto grid min-w-[1.4rem] place-items-center rounded-full bg-ink-100 text-ink-700 px-1.5 text-xs font-bold">0</span></a><a href="admin-paket.html" aria-current="page" class="flex items-center gap-3 rounded-2xl bg-brand-100 px-4 py-3 text-sm font-bold text-brand-800 shadow-[0_1px_0_#fff_inset,0_8px_16px_-10px_rgba(37,89,204,.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="tags" class="h-[18px] w-[18px]"></i> Paket Layanan </a></nav>
+
+    <div class="space-y-3 p-3">
+      <div class="rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-4 text-white shadow-soft">
+        <p class="text-xs font-semibold text-brand-100">Perlu tindakan</p>
+        <p class="mt-1 text-3xl font-extrabold tabular-nums" id="side-pending">0</p>
+        <a href="admin.html#aksi" class="mt-2 inline-flex items-center gap-1 rounded text-sm font-bold text-white underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Lihat daftar <i data-lucide="arrow-right" class="h-4 w-4"></i></a>
+      </div>
+      <!-- Laravel: logout harus POST (form + @csrf) -->
+      <a href="login.html" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-[#B91C1C] transition hover:bg-[#FEE2E2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#DC2626]"><i data-lucide="log-out" class="h-[18px] w-[18px]"></i> Keluar</a>
+    </div>
+  </aside>
+
+  <div class="lg:pl-[18.5rem]">
+    <header class="flex flex-wrap items-center gap-3 px-4 pt-4 sm:px-8 lg:pr-8 lg:pt-6">
+      <button id="sb-open" type="button" class="card grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-ink-800 transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 lg:hidden" aria-label="Buka menu" aria-controls="sidebar" aria-expanded="false"><i data-lucide="menu" class="h-5 w-5"></i></button>
+      <nav aria-label="Breadcrumb" class="hidden text-sm text-ink-600 sm:block"><a href="admin.html" class="rounded font-semibold hover:text-brand-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Dashboard</a> <span aria-hidden="true">/</span> <span aria-current="page" class="font-bold text-ink-900">Paket Layanan</span></nav>
+    </header>
+
+    <main id="utama" class="px-4 pb-16 pt-4 sm:px-8 lg:pr-8">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">Paket Layanan</h1>
+          <p id="count" class="mt-1 text-ink-600">Kelola paket layanan Webkita</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a href="harga.html" target="_blank" rel="noopener" class="card inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-ink-800 transition hover:bg-white hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="external-link" class="h-4 w-4"></i> Lihat halaman Harga</a>
+          <button id="refresh" type="button" class="card inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-ink-800 transition hover:bg-white hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i id="refresh-icon" data-lucide="refresh-cw" class="h-4 w-4"></i> Refresh</button>
+          <button id="add" type="button" class="inline-flex items-center gap-2 rounded-2xl bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-soft transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"><i data-lucide="plus" class="h-4 w-4"></i> Tambah Paket</button>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-start gap-3 rounded-2xl border border-brand-200 bg-brand-50/80 p-4 text-sm text-brand-900">
+        <i data-lucide="info" class="mt-0.5 h-5 w-5 shrink-0 text-brand-600"></i>
+        <p>Hanya paket <b>Aktif</b> yang tampil di halaman Harga, dan rentang harganya dipakai untuk rekomendasi paket di slider anggaran. Paket yang sudah dipakai orderan tidak bisa dihapus, hanya dinonaktifkan.</p>
+      </div>
+
+      <section aria-label="Daftar paket" class="mt-5">
+        <div class="card rounded-3xl">
+          <div class="overflow-x-auto scroll-thin">
+            <table class="w-full min-w-[860px] text-left text-sm">
+              <caption class="sr-only">Daftar paket layanan</caption>
+              <thead class="bg-brand-50/70 text-xs font-bold uppercase tracking-wide text-ink-600">
+                <tr><th scope="col" class="px-6 py-3.5">#</th><th scope="col" class="px-2.5 py-3.5">Paket</th><th scope="col" class="px-2.5 py-3.5">Tier</th><th scope="col" class="px-2.5 py-3.5">Rentang harga</th><th scope="col" class="px-2.5 py-3.5">Fitur</th><th scope="col" class="px-2.5 py-3.5">Orderan</th><th scope="col" class="px-2.5 py-3.5">Status</th><th scope="col" class="px-6 py-3.5 text-right">Aksi</th></tr>
+              </thead>
+              <tbody id="rows" class="divide-y divide-ink-100"></tbody>
+            </table>
+          </div>
+          <div id="empty" class="hidden px-6 py-14 text-center">
+            <span class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-50 text-brand-600"><i data-lucide="tags" class="h-7 w-7"></i></span>
+            <p class="mt-4 font-extrabold text-ink-900">Belum ada paket layanan</p>
+            <p class="mt-1 text-ink-600">Tambahkan paket pertama agar tampil di halaman Harga.</p>
+          </div>
+        </div>
+        <p id="live" class="sr-only" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+  </div>
+
+  <!-- ================= DIALOG FORM ================= -->
+  <dialog id="pkg" class="m-auto w-[min(94vw,44rem)] max-h-[92vh] overflow-hidden rounded-3xl bg-white p-0 text-ink-900 shadow-lift" aria-labelledby="p-title">
+    <form id="pkg-form" novalidate class="flex max-h-[92vh] flex-col">
+      <div class="flex items-center justify-between gap-4 border-b border-ink-100 px-6 py-5">
+        <h2 id="p-title" class="text-xl font-extrabold tracking-tight">Tambah Paket</h2>
+        <button type="button" data-close class="grid h-10 w-10 place-items-center rounded-xl border border-ink-200 text-ink-700 transition hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400" aria-label="Tutup"><i data-lucide="x" class="h-5 w-5"></i></button>
+      </div>
+
+      <div class="space-y-5 overflow-y-auto px-6 py-5 scroll-thin">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="f-title" class="mb-1.5 block text-sm font-bold">Nama paket <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+            <input id="f-title" maxlength="40" autocomplete="off" placeholder="Contoh: Starter" aria-describedby="e-title" class="h-11 w-full rounded-xl border border-ink-300 bg-white px-3.5 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FECACA]" />
+            <p id="e-title" role="alert" class="mt-1.5 hidden items-start gap-1.5 text-sm font-semibold text-[#B91C1C] [&:not(.hidden)]:flex"><i data-lucide="circle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i><span></span></p>
+          </div>
+          <div>
+            <label for="f-tier" class="mb-1.5 block text-sm font-bold">Tier <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+            <select id="f-tier" aria-describedby="e-tier" class="h-11 w-full rounded-xl border border-ink-300 bg-white px-3.5 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FECACA] cursor-pointer"></select>
+            <p id="e-tier" role="alert" class="mt-1.5 hidden items-start gap-1.5 text-sm font-semibold text-[#B91C1C] [&:not(.hidden)]:flex"><i data-lucide="circle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i><span></span></p>
+          </div>
+        </div>
+
+        <fieldset class="rounded-2xl bg-ink-50 p-4">
+          <legend class="px-1 text-sm font-bold">Rentang harga</legend>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="f-min" class="mb-1.5 block text-sm font-bold">Harga minimum <span class="text-[#B91C1C]" aria-hidden="true">*</span></label>
+              <div class="relative"><span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-600">Rp</span><input id="f-min" inputmode="numeric" autocomplete="off" placeholder="500.000" aria-describedby="e-min" class="h-11 w-full rounded-xl border border-ink-300 bg-white px-3.5 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FECACA] pl-10" /></div>
+              <p id="e-min" role="alert" class="mt-1.5 hidden items-start gap-1.5 text-sm font-semibold text-[#B91C1C] [&:not(.hidden)]:flex"><i data-lucide="circle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i><span></span></p>
+            </div>
+            <div>
+              <label for="f-max" class="mb-1.5 block text-sm font-bold">Harga maksimum</label>
+              <div class="relative"><span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-600">Rp</span><input id="f-max" inputmode="numeric" autocomplete="off" placeholder="1.500.000" aria-describedby="e-max" class="h-11 w-full rounded-xl border border-ink-300 bg-white px-3.5 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FECACA] pl-10 disabled:cursor-not-allowed disabled:bg-ink-100 disabled:text-ink-500" /></div>
+              <p id="e-max" role="alert" class="mt-1.5 hidden items-start gap-1.5 text-sm font-semibold text-[#B91C1C] [&:not(.hidden)]:flex"><i data-lucide="circle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i><span></span></p>
+            </div>
+          </div>
+          <label class="mt-3 flex cursor-pointer items-center gap-2.5 text-sm font-semibold text-ink-800"><input id="f-open" type="checkbox" class="h-4 w-4 rounded border-ink-300 accent-brand-600" /> Tanpa batas atas (ditampilkan sebagai "Mulai Rp …")</label>
+          <p class="mt-3 text-sm text-ink-700">Ditampilkan sebagai: <b id="f-label" class="text-brand-800" aria-live="polite">-</b></p>
+          <p id="w-range" class="mt-2 hidden items-start gap-2 rounded-xl bg-[#FEF3C7] px-3 py-2 text-sm font-semibold text-[#92400E] [&:not(.hidden)]:flex" role="status"><i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i><span></span></p>
+        </fieldset>
+
+        <div>
+          <label for="f-desc" class="mb-1.5 flex items-center justify-between text-sm font-bold">Deskripsi <span id="desc-n" class="text-xs font-semibold text-ink-600">0/120</span></label>
+          <textarea id="f-desc" rows="2" maxlength="120" placeholder="Cocok untuk…" class="w-full resize-y rounded-xl border border-ink-300 bg-white px-3.5 py-2.5 text-[15px] placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300"></textarea>
+        </div>
+
+        <div class="grid items-end gap-4 sm:grid-cols-2">
+          <div>
+            <label for="f-sort" class="mb-1.5 block text-sm font-bold">Urutan tampil</label>
+            <input id="f-sort" type="number" min="0" step="1" value="0" aria-describedby="h-sort" class="h-11 w-full rounded-xl border border-ink-300 bg-white px-3.5 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FECACA]" />
+            <p id="h-sort" class="mt-1 text-xs text-ink-600">Angka kecil tampil lebih dulu.</p>
+          </div>
+          <label class="flex h-11 cursor-pointer items-center gap-3 text-sm font-bold"><input id="f-active" type="checkbox" role="switch" class="h-5 w-5 rounded border-ink-300 accent-brand-600" /> Aktif (tampil di halaman Harga)</label>
+        </div>
+
+        <div class="rounded-2xl bg-ink-50 p-4"><div class="flex items-center justify-between"><h3 class="flex items-center gap-2 text-sm font-extrabold"><i data-lucide="circle-check" class="h-[18px] w-[18px] text-[#15803D]"></i> Fitur termasuk</h3><button type="button" data-add="in" class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-bold text-brand-700 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="plus" class="h-4 w-4"></i> Tambah</button></div>
+          <ul id="l-in" class="mt-3 space-y-2"></ul><p id="e-in" role="alert" class="mt-1.5 hidden items-start gap-1.5 text-sm font-semibold text-[#B91C1C] [&:not(.hidden)]:flex"><i data-lucide="circle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i><span></span></p></div>
+        <div class="rounded-2xl bg-[#FEF2F2] p-4"><div class="flex items-center justify-between"><h3 class="flex items-center gap-2 text-sm font-extrabold"><i data-lucide="circle-x" class="h-[18px] w-[18px] text-[#B91C1C]"></i> Tidak termasuk</h3><button type="button" data-add="out" class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-bold text-brand-700 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="plus" class="h-4 w-4"></i> Tambah</button></div>
+          <ul id="l-out" class="mt-3 space-y-2"></ul></div>
+      </div>
+
+      <div class="flex flex-col-reverse gap-3 border-t border-ink-100 px-6 py-4 sm:flex-row sm:justify-end">
+        <button type="button" data-close class="inline-flex items-center justify-center rounded-xl border-2 border-ink-200 px-5 py-2.5 font-bold text-ink-800 transition hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Batal</button>
+        <button id="save" type="submit" class="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 font-bold text-white shadow-soft transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"><span id="save-t">Simpan</span></button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= DIALOG HAPUS ================= -->
+  <dialog id="del" class="m-auto w-[min(92vw,26rem)] rounded-3xl bg-white p-0 text-ink-900 shadow-lift" aria-labelledby="d-title">
+    <div class="p-6 sm:p-7">
+      <span id="d-ico" class="grid h-12 w-12 place-items-center rounded-2xl bg-[#FEE2E2] text-[#B91C1C]"><i data-lucide="trash-2" class="h-6 w-6"></i></span>
+      <h2 id="d-title" class="mt-4 text-xl font-extrabold tracking-tight"></h2>
+      <p id="d-text" class="mt-1.5 text-ink-600"></p>
+      <div id="d-btns" class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"></div>
+    </div>
+  </dialog>
+
+  <div id="toast" role="status" aria-live="polite" class="pointer-events-none fixed bottom-6 left-1/2 z-[80] -translate-x-1/2"></div>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script>
+    (function () {
+      var ICON_ATTRS = { 'aria-hidden': 'true', focusable: 'false' };
+      function icons() { if (window.lucide) lucide.createIcons({ attrs: ICON_ATTRS }); }
+      function $(id) { return document.getElementById(id); }
+      function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      /* ----- toast ----- */
+      function toast(msg, kind) {
+        var t = $('toast');
+        t.innerHTML = '<div class="toast-in pointer-events-auto flex items-center gap-2.5 rounded-xl bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-lift"><i data-lucide="' + (kind === 'err' ? 'circle-alert' : 'circle-check') + '" class="h-5 w-5 ' + (kind === 'err' ? 'text-[#FCA5A5]' : 'text-[#86EFAC]') + '"></i>' + esc(msg) + '</div>';
+        icons(); clearTimeout(toast.t); toast.t = setTimeout(function () { t.innerHTML = ''; }, 3600);
+      }
+
+      /* ----- sidebar (mobile) ----- */
+      var sb = $('sidebar'), ov = $('overlay'), so = $('sb-open');
+      function drawer(open) {
+        sb.classList.toggle('-translate-x-full', !open); ov.classList.toggle('hidden', !open);
+        so.setAttribute('aria-expanded', String(open)); document.documentElement.style.overflow = open ? 'hidden' : '';
+        if (open) $('sb-close').focus(); else if (document.activeElement && sb.contains(document.activeElement)) so.focus();
+      }
+      so.addEventListener('click', function () { drawer(true); });
+      $('sb-close').addEventListener('click', function () { drawer(false); });
+      ov.addEventListener('click', function () { drawer(false); });
+      sb.addEventListener('click', function (e) { if (e.target.closest('a[href^="#"]') && !ov.classList.contains('hidden')) drawer(false); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !ov.classList.contains('hidden')) drawer(false); });
+
+      
+      /* ====== DATA CONTOH — di Laravel dari tabel packages (@json). harga.html memakai data yang sama (hanya yang aktif) ====== */
+      var SIDE = { orders: 14, users: 8, trx: 7, pending: 5 };
+      var TIERS = ['starter', 'professional', 'business', 'enterprise'];
+      var TIER_CLS = { starter: 'bg-[#CFFAFE] text-[#0E7490]', professional: 'bg-brand-100 text-brand-800', business: 'bg-[#E0E7FF] text-[#3730A3]', enterprise: 'bg-ink-900 text-white' };
+      var PKGS = [
+        { id: 1, title: 'Starter', tier: 'starter', min: 500000, max: 1500000, open: false, desc: 'Website profesional untuk memulai bisnis online.', sort: 1, active: true, used: 3,
+          inc: ['Optimasi SEO dasar', 'Hingga 5 halaman', 'Desain responsif'], out: [] },
+        { id: 2, title: 'Professional', tier: 'professional', min: 1500000, max: 5000000, open: false, desc: 'Website bisnis dengan fitur lengkap dan SEO lanjutan.', sort: 2, active: true, used: 4,
+          inc: ['Optimasi SEO lanjutan', 'CMS dan integrasi', 'Hingga 15 halaman', 'Semua fitur Starter'], out: [] },
+        { id: 3, title: 'Business', tier: 'business', min: 5000000, max: 15000000, open: false, desc: 'Solusi digital lengkap untuk bisnis yang sedang berkembang.', sort: 3, active: true, used: 5,
+          inc: ['Dukungan prioritas', 'Integrasi pihak ketiga', 'Halaman dan fitur kustom', 'Semua fitur Professional'], out: [] },
+        { id: 4, title: 'Enterprise', tier: 'enterprise', min: 15000000, max: null, open: true, desc: 'Pengembangan khusus untuk kebutuhan skala besar.', sort: 4, active: true, used: 2,
+          inc: ['Konsultasi teknis', 'Dukungan prioritas', 'Integrasi sistem enterprise', 'Solusi dan desain kustom'], out: [] }
+      ];
+      var nextId = 5, editing = null, lastTrigger = null;
+      var SLIDER_MIN = 500000;
+
+      function rp(n) { return 'Rp ' + n.toLocaleString('id-ID'); }
+      function labelOf(p) { return p.open ? 'Mulai ' + rp(p.min) : rp(p.min) + ' – ' + rp(p.max); }   // dihasilkan otomatis, bukan diketik admin
+      function byId(id) { return PKGS.filter(function (p) { return p.id === id; })[0]; }
+      function sorted() { return PKGS.slice().sort(function (a, b) { return a.sort - b.sort || a.id - b.id; }); }
+      function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+      function digits(v) { return String(v || '').replace(/\D/g, ''); }
+      function fmtInput(el) { var d = digits(el.value); el.value = d ? (+d).toLocaleString('id-ID') : ''; }
+
+      /* ----- tabel ----- */
+      function renderRows(animate) {
+        var rows = sorted();
+        $('empty').classList.toggle('hidden', rows.length > 0);
+        $('rows').innerHTML = rows.map(function (p, i) {
+          var dim = p.active ? '' : ' opacity-60';
+          var del = '<button type="button" data-del="' + p.id + '" class="grid h-9 w-9 place-items-center rounded-lg border border-[#FECACA] bg-[#FEF2F2] text-[#B91C1C] transition hover:bg-[#FEE2E2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#DC2626]" aria-label="Hapus paket ' + esc(p.title) + '"><i data-lucide="trash-2" class="h-4 w-4"></i></button>';
+          return '<tr class="' + (animate ? 'row-in ' : '') + 'align-middle transition hover:bg-brand-50/50" style="--d:' + (i * 50) + 'ms" data-row="' + p.id + '">' +
+            '<td class="px-6 py-4 text-ink-600">' + (i + 1) + '</td>' +
+            '<td class="px-2.5 py-4' + dim + '"><span class="block font-bold text-ink-900">' + esc(p.title) + '</span><span class="block max-w-[12rem] truncate text-xs text-ink-600" title="' + esc(p.desc) + '">' + esc(p.desc || '-') + '</span></td>' +
+            '<td class="px-2.5 py-4' + dim + '"><span class="rounded-full px-3 py-1 text-xs font-bold ' + TIER_CLS[p.tier] + '">' + esc(p.tier) + '</span></td>' +
+            '<td class="min-w-[9.5rem] px-2.5 py-4 font-semibold tabular-nums text-ink-800' + dim + '">' + labelOf(p) + '</td>' +
+            '<td class="px-2.5 py-4' + dim + '"><span class="inline-flex items-center gap-3 text-sm font-bold tabular-nums"><span class="inline-flex items-center gap-1 text-[#15803D]" title="Fitur termasuk"><i data-lucide="circle-check" class="h-4 w-4"></i>' + p.inc.length + '<span class="sr-only"> fitur termasuk</span></span><span class="inline-flex items-center gap-1 ' + (p.out.length ? 'text-[#B91C1C]' : 'text-ink-500') + '" title="Fitur tidak termasuk"><i data-lucide="circle-x" class="h-4 w-4"></i>' + p.out.length + '<span class="sr-only"> fitur tidak termasuk</span></span></span></td>' +
+            '<td class="px-2.5 py-4 tabular-nums text-ink-700' + dim + '">' + p.used + '</td>' +
+            '<td class="px-2.5 py-4"><span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ' + (p.active ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-ink-100 text-ink-700') + '"><i data-lucide="' + (p.active ? 'eye' : 'eye-off') + '" class="h-3.5 w-3.5"></i>' + (p.active ? 'Aktif' : 'Nonaktif') + '</span></td>' +
+            '<td class="px-6 py-4"><span class="inline-flex items-center justify-end gap-2">' +
+              '<button type="button" data-toggle="' + p.id + '" aria-pressed="' + p.active + '" class="grid h-9 w-9 place-items-center rounded-lg border transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 ' + (p.active ? 'border-[#BBF7D0] bg-[#F0FDF4] text-[#15803D] hover:bg-[#DCFCE7]' : 'border-ink-200 bg-ink-50 text-ink-500 hover:bg-ink-100') + '" aria-label="' + (p.active ? 'Nonaktifkan' : 'Aktifkan') + ' paket ' + esc(p.title) + '"><i data-lucide="' + (p.active ? 'eye' : 'eye-off') + '" class="h-4 w-4"></i></button>' +
+              '<button type="button" data-edit="' + p.id + '" class="grid h-9 w-9 place-items-center rounded-lg border border-brand-200 bg-brand-50 text-brand-700 transition hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400" aria-label="Edit paket ' + esc(p.title) + '"><i data-lucide="pencil" class="h-4 w-4"></i></button>' + del + '</span></td></tr>';
+        }).join('');
+        var act = PKGS.filter(function (p) { return p.active; }).length;
+        $('count').textContent = PKGS.length + ' paket, ' + act + ' aktif';
+        $('live').textContent = PKGS.length + ' paket ditampilkan';
+        $('nav-orders').textContent = SIDE.orders; $('nav-users').textContent = SIDE.users; $('nav-trx').textContent = SIDE.trx; $('side-pending').textContent = SIDE.pending;
+        icons();
+      }
+
+      $('rows').addEventListener('click', function (e) {
+        var t = e.target.closest('[data-toggle]'), ed = e.target.closest('[data-edit]'), dl = e.target.closest('[data-del]');
+        if (t) {
+          var p = byId(+t.dataset.toggle);
+          if (p.active && PKGS.filter(function (x) { return x.active; }).length === 1) { toast('Minimal satu paket harus aktif.', 'err'); return; }
+          p.active = !p.active; renderRows(false); toast('Paket ' + p.title + (p.active ? ' diaktifkan.' : ' dinonaktifkan.'));
+          var b = $('rows').querySelector('[data-toggle="' + p.id + '"]'); if (b) b.focus();
+        }
+        if (ed) openForm(byId(+ed.dataset.edit), ed);
+        if (dl) askDelete(byId(+dl.dataset.del), dl);
+      });
+      $('add').addEventListener('click', function () { openForm(null, this); });
+
+      /* ----- form tambah / edit ----- */
+      var dlg = $('pkg'), FIELDS = ['title', 'tier', 'min', 'max', 'in'];
+      $('f-tier').innerHTML = '<option value="">Pilih tier</option>' + TIERS.map(function (t) { return '<option value="' + t + '">' + cap(t) + '</option>'; }).join('');
+
+      function setErr(k, msg) {
+        var e = $('e-' + k), f = $('f-' + k);
+        if (msg) { e.querySelector('span').textContent = msg; e.classList.remove('hidden'); if (f) f.setAttribute('aria-invalid', 'true'); }
+        else { e.classList.add('hidden'); if (f) f.removeAttribute('aria-invalid'); }
+      }
+      function clearErrs() { FIELDS.forEach(function (k) { setErr(k, ''); }); }
+
+      function featRow(kind, val) {
+        var li = document.createElement('li'); li.className = 'flex items-center gap-1.5';
+        li.innerHTML = '<input maxlength="80" autocomplete="off" placeholder="Nama fitur…" value="' + esc(val || '') + '" aria-label="Nama fitur" class="h-10 min-w-0 flex-1 rounded-xl border border-ink-300 bg-white px-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300" />' +
+          '<button type="button" data-mv="-1" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-500 hover:bg-white hover:text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400" aria-label="Naikkan urutan"><i data-lucide="chevron-up" class="h-4 w-4"></i></button>' +
+          '<button type="button" data-mv="1" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-500 hover:bg-white hover:text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400" aria-label="Turunkan urutan"><i data-lucide="chevron-down" class="h-4 w-4"></i></button>' +
+          '<button type="button" data-rm class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[#B91C1C] hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#DC2626]" aria-label="Hapus fitur"><i data-lucide="x" class="h-4 w-4"></i></button>';
+        return li;
+      }
+      function fillList(kind, arr) { var ul = $('l-' + kind); ul.innerHTML = ''; (arr || []).forEach(function (v) { ul.appendChild(featRow(kind, v)); }); icons(); }
+      function readList(kind) { return Array.prototype.map.call($('l-' + kind).querySelectorAll('input'), function (i) { return i.value.trim(); }).filter(Boolean); }
+      dlg.addEventListener('click', function (e) {
+        if (e.target === dlg || e.target.closest('[data-close]')) { dlg.close(); return; }
+        var add = e.target.closest('[data-add]');
+        if (add) { var kind = add.dataset.add, ul = $('l-' + kind); if (ul.children.length >= 20) { toast('Maksimal 20 fitur.', 'err'); return; } var li = featRow(kind); ul.appendChild(li); icons(); li.querySelector('input').focus(); return; }
+        var li2 = e.target.closest('#l-in li, #l-out li'); if (!li2) return;
+        if (e.target.closest('[data-rm]')) { var ul2 = li2.parentNode, nx = li2.nextElementSibling || li2.previousElementSibling; li2.remove(); if (nx) nx.querySelector('input').focus(); return; }
+        var mv = e.target.closest('[data-mv]');
+        if (mv) { var d = +mv.dataset.mv, sib = d < 0 ? li2.previousElementSibling : li2.nextElementSibling; if (sib) { d < 0 ? li2.parentNode.insertBefore(li2, sib) : li2.parentNode.insertBefore(sib, li2); mv.focus(); } }
+      });
+      dlg.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && e.target.matches('#l-in input, #l-out input')) {
+          e.preventDefault(); var li = e.target.closest('li'), ul = li.parentNode, n = featRow(); ul.insertBefore(n, li.nextSibling); icons(); n.querySelector('input').focus();
+        }
+      });
+
+      function current() {
+        var open = $('f-open').checked, min = +digits($('f-min').value), max = open ? null : +digits($('f-max').value) || null;
+        return { min: min, max: max, open: open };
+      }
+      function refreshLabel() {
+        var c = current(), t = '-';
+        if (c.min && (c.open || (c.max && c.max > c.min))) t = labelOf(c);
+        $('f-label').textContent = t;
+        var w = $('w-range'), msgs = [];
+        if (c.min) {
+          if (c.min < SLIDER_MIN) msgs.push('Di bawah batas slider halaman Harga (' + rp(SLIDER_MIN) + '), jadi paket ini tidak akan pernah direkomendasikan.');
+          var self = editing ? editing.id : null, myMax = c.open ? Infinity : (c.max || c.min);
+          PKGS.forEach(function (o) {
+            if (o.id === self || !o.active || !$('f-active').checked) return;
+            var oMax = o.open ? Infinity : o.max;
+            if (c.min < oMax && o.min < myMax) msgs.push('Rentang tumpang tindih dengan paket ' + o.title + ' (' + labelOf(o) + '). Rekomendasi di halaman Harga bisa ambigu.');
+          });
+        }
+        w.classList.toggle('hidden', !msgs.length); w.querySelector('span').textContent = msgs.join(' ');
+      }
+      ['f-min', 'f-max'].forEach(function (id) { $(id).addEventListener('input', function () { fmtInput(this); refreshLabel(); }); });
+      $('f-open').addEventListener('change', function () { $('f-max').disabled = this.checked; if (this.checked) { $('f-max').value = ''; setErr('max', ''); } refreshLabel(); });
+      $('f-active').addEventListener('change', refreshLabel);
+      $('f-desc').addEventListener('input', function () { $('desc-n').textContent = this.value.length + '/120'; });
+      FIELDS.forEach(function (k) { var f = $('f-' + k); if (f) f.addEventListener('input', function () { setErr(k, ''); }); });
+
+      function openForm(p, trigger) {
+        lastTrigger = trigger; editing = p; clearErrs();
+        $('p-title').textContent = p ? 'Edit Paket' : 'Tambah Paket';
+        $('f-title').value = p ? p.title : ''; $('f-tier').value = p ? p.tier : '';
+        $('f-min').value = p ? p.min.toLocaleString('id-ID') : '';
+        $('f-open').checked = p ? p.open : false; $('f-max').disabled = $('f-open').checked;
+        $('f-max').value = p && p.max ? p.max.toLocaleString('id-ID') : '';
+        $('f-desc').value = p ? p.desc : ''; $('desc-n').textContent = $('f-desc').value.length + '/120';
+        $('f-sort').value = p ? p.sort : (PKGS.reduce(function (m, x) { return Math.max(m, x.sort); }, 0) + 1);
+        $('f-active').checked = p ? p.active : true;
+        fillList('in', p ? p.inc : []); fillList('out', p ? p.out : []);
+        refreshLabel(); icons(); dlg.showModal(); dlg.querySelector('.overflow-y-auto').scrollTop = 0; $('f-title').focus({ preventScroll: true });
+      }
+
+      $('pkg-form').addEventListener('submit', function (e) {
+        e.preventDefault(); clearErrs();
+        var title = $('f-title').value.trim(), tier = $('f-tier').value, c = current(), inc = readList('in'), out = readList('out'), errs = {}, self = editing ? editing.id : null;
+        if (!title) errs.title = 'Nama paket wajib diisi.';
+        else if (PKGS.some(function (p) { return p.id !== self && p.title.toLowerCase() === title.toLowerCase(); })) errs.title = 'Nama paket sudah dipakai paket lain.';
+        if (!tier) errs.tier = 'Pilih tier paket.';
+        if (!c.min) errs.min = 'Harga minimum wajib diisi.'; else if (c.min < 1000) errs.min = 'Harga minimum minimal Rp 1.000.';
+        if (!c.open) { if (!c.max) errs.max = 'Isi harga maksimum atau centang "Tanpa batas atas".'; else if (c.min && c.max <= c.min) errs.max = 'Harga maksimum harus lebih besar dari minimum.'; }
+        if (!inc.length) errs['in'] = 'Tambahkan minimal satu fitur yang termasuk.';
+        var keys = Object.keys(errs);
+        if (keys.length) { keys.forEach(function (k) { setErr(k, errs[k]); }); var first = FIELDS.filter(function (k) { return errs[k]; })[0]; var el = $('f-' + first) || $('l-in').querySelector('input') || dlg.querySelector('[data-add="in"]'); el.focus(); return; }
+        var btn = $('save'); btn.disabled = true; $('save-t').textContent = 'Menyimpan…';
+        setTimeout(function () {   // demo: di Laravel ini POST/PUT ke server + validasi ulang di server
+          var data = { title: title, tier: tier, min: c.min, max: c.max, open: c.open, desc: $('f-desc').value.trim(), sort: Math.max(0, parseInt($('f-sort').value, 10) || 0), active: $('f-active').checked, inc: inc, out: out }, id;
+          if (editing) { Object.keys(data).forEach(function (k) { editing[k] = data[k]; }); id = editing.id; }
+          else { data.id = nextId++; data.used = 0; PKGS.push(data); id = data.id; }
+          btn.disabled = false; $('save-t').textContent = 'Simpan'; dlg.close(); renderRows(false);
+          toast('Paket ' + title + (self ? ' diperbarui.' : ' ditambahkan.'));
+          var f = $('rows').querySelector('[data-edit="' + id + '"]'); if (f) f.focus();
+        }, 500);
+      });
+
+      /* ----- hapus ----- */
+      var dd = $('del'), delTarget = null;
+      function askDelete(p, trigger) {
+        delTarget = p; lastTrigger = trigger;
+        var btns = $('d-btns'), cancel = '<button type="button" data-dclose class="inline-flex items-center justify-center rounded-xl border-2 border-ink-200 px-5 py-2.5 font-bold text-ink-800 transition hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">' + (p.used ? 'Mengerti' : 'Batal') + '</button>';
+        if (p.used) {
+          $('d-title').textContent = 'Paket tidak bisa dihapus';
+          $('d-text').innerHTML = 'Paket <b>' + esc(p.title) + '</b> dipakai oleh <b>' + p.used + ' orderan</b>. Menghapusnya akan merusak riwayat orderan dan transaksi. Nonaktifkan saja agar tidak tampil di halaman Harga.';
+          btns.innerHTML = cancel + (p.active ? '<button type="button" data-dform class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-2.5 font-bold text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Nonaktifkan</button>' : '');
+        } else {
+          $('d-title').textContent = 'Hapus paket?';
+          $('d-text').innerHTML = 'Paket <b>' + esc(p.title) + '</b> akan dihapus permanen beserta semua fiturnya. Belum ada orderan yang memakainya.';
+          btns.innerHTML = cancel + '<button type="button" data-dok class="inline-flex items-center justify-center rounded-xl bg-[#B91C1C] px-5 py-2.5 font-bold text-white transition hover:bg-[#991B1B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#DC2626]">Ya, Hapus</button>';
+        }
+        icons(); dd.showModal();
+      }
+      dd.addEventListener('click', function (e) {
+        if (e.target === dd || e.target.closest('[data-dclose]')) { dd.close(); return; }
+        if (e.target.closest('[data-dform]')) {
+          dd.close(); var p = delTarget;
+          if (PKGS.filter(function (x) { return x.active; }).length === 1) { toast('Minimal satu paket harus aktif.', 'err'); return; }
+          p.active = false; renderRows(false); toast('Paket ' + p.title + ' dinonaktifkan.'); return;
+        }
+        if (e.target.closest('[data-dok]')) {
+          var t = delTarget; dd.close(); PKGS = PKGS.filter(function (x) { return x.id !== t.id; }); renderRows(false); toast('Paket ' + t.title + ' dihapus.'); $('add').focus();
+        }
+      });
+
+      $('refresh').addEventListener('click', function () {
+        var ic = $('refresh-icon'); ic.classList.add('animate-spin'); $('refresh').disabled = true;
+        setTimeout(function () { ic.classList.remove('animate-spin'); $('refresh').disabled = false; renderRows(true); toast('Data diperbarui.'); }, 700);
+      });
+      renderRows(true); icons();
+    })();
+  </script>
+</body>
+</html>

@@ -1,103 +1,129 @@
-import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, Loader2 } from "lucide-react";
-import { STATUS_CONFIG, STATUS_ORDER } from "../../utils/adminConstants";
-import StatusBadge from "./StatusBadge";
-import API from "../../core/utils/api_client";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Check, ChevronDown, Loader2, Lock } from "lucide-react";
+import { NEXT_STATUS, ORDER_KEYS, ORDER_STATUS, statusOf } from "../../utils/status";
+import { OrderStatusChip } from "../../components/ui/StatusChip";
 
-const StatusUpdater = ({ order, onUpdated }) => {
+/**
+ * Dropdown status melayang (tidak terpotong tabel).
+ * Mengikuti alur satu arah: Menunggu → Disetujui → Diproses → Selesai, Ditolak final.
+ */
+const StatusUpdater = ({ order, onPick, busy = false }) => {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef(null);
+  const menuRef = useRef(null);
+  const allowed = NEXT_STATUS[order.status] || ORDER_KEYS;
+  const cur = statusOf(order.status);
 
-  useEffect(() => {
-    if (open && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setDropPos({
-        top: rect.bottom + window.scrollY + 6,
-        left: rect.left + window.scrollX,
-      });
-    }
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current || !menuRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    const h = menuRef.current.offsetHeight, w = menuRef.current.offsetWidth;
+    let top = r.bottom + 6;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    setPos({ top, left: Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) });
+    (menuRef.current.querySelector('[aria-selected="true"]') || menuRef.current.querySelector('[role="option"]:not([aria-disabled="true"])'))?.focus();
   }, [open]);
 
-  const handleChange = async (newStatus) => {
-    if (newStatus === order.status) { setOpen(false); return; }
-    setLoading(true);
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = () => setOpen(false);
+    // tutup hanya jika tombol benar-benar bergeser (mis. halaman di-scroll)
+    const start = btnRef.current?.getBoundingClientRect();
+    const onScroll = () => {
+      const r = btnRef.current?.getBoundingClientRect();
+      if (!r || !start || Math.abs(r.top - start.top) > 2 || Math.abs(r.left - start.left) > 2) setOpen(false);
+    };
+    const onDown = (e) => {
+      if (menuRef.current?.contains(e.target) || btnRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open]);
+
+  if (allowed.length <= 1) return <OrderStatusChip status={order.status} admin />;
+
+  const pick = (k) => {
     setOpen(false);
-    try {
-      await API.patch(`/project/${order.id}/status`, { status: newStatus });
-      onUpdated?.();
-    } catch (err) {
-      alert(`Gagal update status: ${err?.message || err}`);
-    } finally {
-      setLoading(false);
-    }
+    btnRef.current?.focus();
+    if (k !== order.status) onPick?.(order, k);
+  };
+
+  const onKey = (e) => {
+    const items = Array.from(menuRef.current?.querySelectorAll('[role="option"]:not([aria-disabled="true"])') || []);
+    const i = items.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
+    else if (e.key === "Home") { e.preventDefault(); items[0]?.focus(); }
+    else if (e.key === "End") { e.preventDefault(); items[items.length - 1]?.focus(); }
+    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setOpen(false); btnRef.current?.focus(); }
+    else if (e.key === "Tab") setOpen(false);
   };
 
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
+    <>
       <button
         ref={btnRef}
-        onClick={() => setOpen(o => !o)}
-        disabled={loading}
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          padding: "5px 10px", borderRadius: 8,
-          border: "1px solid #E2E8F0",
-          background: "#fff", cursor: loading ? "not-allowed" : "pointer",
-          fontSize: 12, fontWeight: 500, color: "#374151",
-          opacity: loading ? 0.6 : 1,
-        }}
+        type="button"
+        disabled={busy}
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`Ubah status orderan ${order.projectTitle}, saat ini ${cur.adminLabel}`}
+        className="inline-flex items-center gap-2 rounded-xl border border-ink-200 bg-white py-1.5 pl-1.5 pr-2.5 shadow-sm transition hover:border-brand-300 disabled:cursor-wait disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"
       >
-        <StatusBadge status={order.status} size="sm" />
-        {loading
-          ? <Loader2 size={13} style={{ animation: "spin 0.8s linear infinite" }} />
-          : <ChevronDown size={13} color="#94A3B8" />
-        }
+        <span className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold ${cur.chip}`}>
+          <span className="h-2 w-2 rounded-full" style={{ background: cur.dot }} />
+          {cur.adminLabel}
+        </span>
+        {busy ? <Loader2 className="h-4 w-4 animate-spin text-ink-500" aria-hidden="true" /> : <ChevronDown className="h-4 w-4 text-ink-500" aria-hidden="true" />}
       </button>
 
-      {open && (
-        <>
-          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
-          <div style={{
-            position: "fixed",
-            top: dropPos.top,
-            left: dropPos.left,
-            zIndex: 9999,
-            background: "#fff", borderRadius: 12,
-            border: "1px solid #E2E8F0",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-            minWidth: 160, padding: "4px",
-          }}>
-            {STATUS_ORDER.map(s => {
-              const cfg = STATUS_CONFIG[s];
-              const active = s === order.status;
-              return (
-                <button
-                  key={s}
-                  onClick={() => handleChange(s)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    width: "100%", padding: "8px 10px",
-                    borderRadius: 8, border: "none",
-                    background: active ? "#F8FAFC" : "transparent",
-                    cursor: "pointer", textAlign: "left",
-                  }}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? cfg.color : "#374151" }}>
-                    {cfg.label}
-                  </span>
-                  {active && <span style={{ marginLeft: "auto", fontSize: 11, color: cfg.color }}>✓</span>}
-                </button>
-              );
-            })}
-          </div>
-        </>
+      {open && createPortal(
+        <div
+          ref={menuRef}
+          role="listbox"
+          aria-label="Pilih status"
+          onKeyDown={onKey}
+          className="fixed z-[96] w-60 rounded-2xl border border-ink-200 bg-white p-2 shadow-lift"
+          style={{ top: pos.top, left: pos.left }}
+        >
+          {ORDER_KEYS.map((k) => {
+            const s = ORDER_STATUS[k];
+            const isCur = k === order.status;
+            const ok = allowed.includes(k);
+            return (
+              <button
+                key={k}
+                type="button"
+                role="option"
+                aria-selected={isCur}
+                aria-disabled={!ok}
+                tabIndex={-1}
+                title={ok ? undefined : `Status tidak bisa diubah ke ${s.adminLabel} dari ${cur.adminLabel}`}
+                onMouseDown={(e) => { if (!ok) e.preventDefault(); }}
+                onClick={() => ok && pick(k)}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] transition focus-visible:outline-none ${ok ? "hover:bg-ink-50 focus-visible:bg-brand-50" : "cursor-not-allowed opacity-45"} ${isCur ? "bg-ink-50 font-bold" : "font-medium"}`}
+                style={isCur ? { color: s.dot } : undefined}
+              >
+                <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: s.dot }} />
+                <span className={`flex-1 ${isCur ? "" : "text-ink-800"}`}>{s.adminLabel}</span>
+                {isCur ? <Check className="h-4 w-4" aria-hidden="true" /> : !ok && <Lock className="h-3.5 w-3.5 text-ink-500" aria-hidden="true" />}
+              </button>
+            );
+          })}
+        </div>,
+        document.body
       )}
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-    </div>
+    </>
   );
 };
 

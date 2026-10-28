@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orderan Saya – Webkita</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS (CDN, untuk prototipe. Untuk produksi Laravel: pakai Tailwind via Vite) -->
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '"Segoe UI"', 'Roboto', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#EFF5FF', 100: '#DCE8FD', 200: '#BFD5FB', 300: '#93B8F7', 400: '#5F94F0', 500: '#3B73E6', 600: '#2559CC', 700: '#1D46A5', 800: '#1B3A82', 900: '#1A3068', 950: '#111F45' },
+            ink: { 50: '#F4F7FB', 100: '#EAF0F7', 200: '#D9E2EE', 300: '#BFCBDC', 400: '#8E9DB5', 500: '#66758F', 600: '#4B5A73', 700: '#36445A', 800: '#232F42', 900: '#152033', 950: '#0C1524' },
+          },
+          boxShadow: {
+            soft: '0 10px 30px -12px rgba(26, 48, 104, 0.18), 0 2px 6px rgba(26, 48, 104, 0.06)',
+            lift: '0 22px 40px -18px rgba(26, 48, 104, 0.30), 0 4px 10px rgba(26, 48, 104, 0.06)',
+          },
+          keyframes: {
+            blob: { '0%,100%': { transform: 'translate(0,0) scale(1)' }, '50%': { transform: 'translate(20px,-16px) scale(1.08)' } },
+            rise: { from: { opacity: '0', transform: 'translateY(14px)' }, to: { opacity: '1', transform: 'none' } },
+            pop: { '0%': { transform: 'scale(.6)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
+          },
+          animation: {
+            blob: 'blob 14s ease-in-out infinite',
+            rise: 'rise .45s cubic-bezier(.22,1,.36,1) both',
+            pop: 'pop .35s cubic-bezier(.34,1.56,.64,1) both',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    @keyframes menuIn { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+    .menu-in { animation: menuIn .18s cubic-bezier(.22,1,.36,1) both; transform-origin: top right; }
+    
+    .card-in { animation: rise .5s cubic-bezier(.22,1,.36,1) both; animation-delay: var(--d, 0ms); }
+    .bar-fill { width: 0; transition: width 1.1s cubic-bezier(.22,1,.36,1) .2s; }
+    .no-scrollbar { scrollbar-width: none; } .no-scrollbar::-webkit-scrollbar { display: none; }
+
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body class="bg-ink-50 font-sans text-ink-900 antialiased selection:bg-brand-200">
+  <a href="#utama" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-white">Lewati ke konten utama</a>
+
+  <header id="navbar" class="sticky top-0 z-50 border-b border-transparent bg-white/85 backdrop-blur transition-shadow duration-300">
+    <div class="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
+      <a href="beranda.html" class="flex items-center gap-2 rounded-md text-xl font-extrabold tracking-tight text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400">
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white"><i data-lucide="code-xml" class="h-[18px] w-[18px]"></i></span>
+        Webkita
+      </a>
+
+      <div class="flex items-center gap-1">
+        <nav class="hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
+        <a href="beranda.html" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Beranda</a>
+        <a href="beranda.html#cara-kerja" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Cara Kerja</a>
+        <a href="orderan.html" aria-current="page" class="rounded-lg bg-brand-50 px-3.5 py-2 text-sm font-bold text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Orderan</a>
+        <a href="harga.html" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Harga</a>
+        </nav>
+
+        <!-- Menu akun -->
+        <div id="user-wrap" class="relative ml-2">
+          <button id="user-btn" type="button" class="grid h-10 w-10 place-items-center rounded-full bg-brand-600 text-white shadow-sm transition hover:bg-brand-700 hover:shadow-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400" aria-haspopup="menu" aria-expanded="false" aria-controls="user-menu" aria-label="Menu akun">
+            <i data-lucide="user" class="h-5 w-5"></i>
+          </button>
+          <div id="user-menu" role="menu" aria-label="Akun" class="menu-in absolute right-0 top-[calc(100%+12px)] hidden w-64 rounded-2xl border border-ink-200 bg-white p-1.5 shadow-lift">
+            <div class="px-3.5 py-3">
+              <p class="font-bold text-ink-900">Demo</p>
+              <p class="text-xs text-ink-600">demo@webkita.local</p>
+            </div>
+            <div class="my-1 h-px bg-ink-200" role="separator"></div>
+            <a role="menuitem" href="#" class="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-ink-800 transition hover:bg-brand-50 focus-visible:bg-brand-50 focus-visible:outline-none"><i data-lucide="user" class="h-4 w-4"></i> Profil</a>
+            <!-- Laravel: logout harus POST. Ganti dengan <form method="POST" action="{{ route('logout') }}">@csrf <button ...> -->
+            <a role="menuitem" href="login.html" class="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#B91C1C] transition hover:bg-[#FEE2E2] focus-visible:bg-[#FEE2E2] focus-visible:outline-none"><i data-lucide="log-out" class="h-4 w-4"></i> Keluar</a>
+          </div>
+        </div>
+
+        <button id="menu-btn" type="button" class="ml-1 grid h-11 w-11 place-items-center rounded-xl text-ink-800 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 md:hidden" aria-controls="mobile-menu" aria-expanded="false" aria-label="Buka menu">
+          <i data-lucide="menu" class="h-6 w-6"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="hidden border-t border-ink-200 bg-white md:hidden">
+      <nav class="mx-auto flex max-w-7xl flex-col gap-1 px-5 py-4" aria-label="Navigasi seluler">
+        <a href="beranda.html" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Beranda</a>
+        <a href="beranda.html#cara-kerja" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Cara Kerja</a>
+        <a href="orderan.html" aria-current="page" class="rounded-lg bg-brand-50 px-3 py-3 font-bold text-brand-700">Orderan</a>
+        <a href="harga.html" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Harga</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="utama" class="relative overflow-hidden">
+    <div class="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-brand-100 opacity-70 blur-3xl animate-blob" aria-hidden="true"></div>
+    <div class="pointer-events-none absolute -right-24 top-64 h-72 w-72 rounded-full bg-brand-200/50 blur-3xl animate-blob" style="animation-delay:-7s" aria-hidden="true"></div>
+
+    <div class="relative mx-auto max-w-5xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
+      <!-- Judul -->
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between animate-rise">
+        <div>
+          <h1 class="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">Orderan Saya</h1>
+          <p class="mt-1.5 text-ink-600">Pantau status dan progress semua proyek Anda.</p>
+        </div>
+        <a href="harga.html" class="group inline-flex items-center justify-center gap-2 self-start rounded-xl bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-lift focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">
+          <i data-lucide="plus" class="h-4 w-4"></i> Buat Orderan Baru
+        </a>
+      </div>
+
+      <!-- Ringkasan -->
+      <section aria-label="Ringkasan orderan" class="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="animate-rise rounded-2xl border border-ink-200 border-l-4 border-l-brand-600 bg-white p-5 shadow-soft" style="animation-delay:60ms">
+          <div class="flex items-start justify-between gap-3"><p class="text-sm font-semibold text-ink-600">Total Orderan</p>
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-100 text-brand-700"><i data-lucide="layers" class="h-5 w-5"></i></span></div>
+          <p id="stat-total" class="mt-2 text-3xl font-extrabold tabular-nums text-ink-900">0</p>
+        </div>
+        <div class="animate-rise rounded-2xl border border-ink-200 border-l-4 border-l-[#D97706] bg-white p-5 shadow-soft" style="animation-delay:120ms">
+          <div class="flex items-start justify-between gap-3"><p class="text-sm font-semibold text-ink-600">Menunggu</p>
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-[#FEF3C7] text-[#B45309]"><i data-lucide="clock" class="h-5 w-5"></i></span></div>
+          <p id="stat-menunggu" class="mt-2 text-3xl font-extrabold tabular-nums text-ink-900">0</p>
+        </div>
+        <div class="animate-rise rounded-2xl border border-ink-200 border-l-4 border-l-[#0E7490] bg-white p-5 shadow-soft" style="animation-delay:180ms">
+          <div class="flex items-start justify-between gap-3"><p class="text-sm font-semibold text-ink-600">Dalam Proses</p>
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-[#CFFAFE] text-[#0E7490]"><i data-lucide="trending-up" class="h-5 w-5"></i></span></div>
+          <p id="stat-dalam-proses" class="mt-2 text-3xl font-extrabold tabular-nums text-ink-900">0</p>
+        </div>
+        <div class="animate-rise rounded-2xl border border-ink-200 border-l-4 border-l-[#15803D] bg-white p-5 shadow-soft" style="animation-delay:240ms">
+          <div class="flex items-start justify-between gap-3"><p class="text-sm font-semibold text-ink-600">Selesai</p>
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-[#DCFCE7] text-[#15803D]"><i data-lucide="circle-check" class="h-5 w-5"></i></span></div>
+          <p id="stat-selesai" class="mt-2 text-3xl font-extrabold tabular-nums text-ink-900">0</p>
+        </div>
+      </section>
+
+      <!-- Filter status -->
+      <div class="mt-8 -mx-5 overflow-x-auto px-5 no-scrollbar sm:mx-0 sm:px-0">
+        <div id="filters" class="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="group" aria-label="Filter status orderan"></div>
+      </div>
+
+      <!-- Daftar orderan -->
+      <p id="list-status" class="sr-only" role="status" aria-live="polite"></p>
+      <div id="list" class="mt-5 space-y-4"></div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script>
+    (function () {
+      var ICON_ATTRS = { 'aria-hidden': 'true', focusable: 'false' };
+      function icons() { if (window.lucide) lucide.createIcons({ attrs: ICON_ATTRS }); }
+
+      /* ====== DATA CONTOH ======
+         Di Laravel, isi dari tabel orderan milik user yang login (@json($orders)).
+         Tambahkan ?kosong di URL untuk melihat tampilan saat belum ada orderan. */
+      var ORDERS = [
+        { id: 'ORD-2026-0009', title: 'Aplikasi Katalog Produk',       pkg: 'Starter',      status: 'menunggu',     date: '25 Okt 2026', price: 'Rp 1.200.000' },
+        { id: 'ORD-2026-0008', title: 'Toko Online Kopi Batam',        pkg: 'Business',     status: 'disetujui',    date: '20 Okt 2026', price: 'Rp 9.000.000' },
+        { id: 'ORD-2026-0007', title: 'Website Toko Batik Nusantara',  pkg: 'Business',     status: 'dalam-proses', date: '12 Okt 2026', price: 'Rp 12.500.000', done: 2, total: 4 },
+        { id: 'ORD-2026-0006', title: 'Company Profile CV Maju Jaya',  pkg: 'Professional', status: 'selesai',      date: '3 Sep 2026',  price: 'Rp 3.500.000', done: 4, total: 4 },
+        { id: 'ORD-2026-0004', title: 'Portal Event Kampus',           pkg: 'Enterprise',   status: 'ditolak',      date: '1 Sep 2026',  price: 'Rp 18.000.000' }
+      ];
+      if (/[?&]kosong/.test(location.search)) ORDERS = [];
+
+      var STATUS = {
+        'menunggu':     { label: 'Menunggu',     icon: 'clock-3',      cls: 'bg-[#FEF3C7] text-[#B45309]' },
+        'disetujui':    { label: 'Disetujui',    icon: 'badge-check',  cls: 'bg-brand-100 text-brand-700' },
+        'dalam-proses': { label: 'Dalam Proses', icon: 'trending-up',  cls: 'bg-[#CFFAFE] text-[#0E7490]' },
+        'ditolak':      { label: 'Ditolak',      icon: 'circle-x',     cls: 'bg-[#FEE2E2] text-[#B91C1C]' },
+        'selesai':      { label: 'Selesai',      icon: 'circle-check', cls: 'bg-[#DCFCE7] text-[#15803D]' }
+      };
+      var FILTERS = [['semua', 'Semua'], ['menunggu', 'Menunggu'], ['dalam-proses', 'Dalam Proses'], ['disetujui', 'Disetujui'], ['ditolak', 'Ditolak'], ['selesai', 'Selesai']];
+      var active = 'semua';
+
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function count(s) { return s === 'semua' ? ORDERS.length : ORDERS.filter(function (o) { return o.status === s; }).length; }
+
+      /* ----- angka ringkasan (count-up) ----- */
+      function countUp(id, to) {
+        var el = document.getElementById(id);
+        if (reduce || to === 0) { el.textContent = to; return; }
+        var t0 = performance.now(), dur = 700;
+        (function tick(t) {
+          var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+          el.textContent = Math.round(to * e);
+          if (k < 1) requestAnimationFrame(tick);
+        })(t0);
+      }
+      countUp('stat-total', count('semua')); countUp('stat-menunggu', count('menunggu'));
+      countUp('stat-dalam-proses', count('dalam-proses')); countUp('stat-selesai', count('selesai'));
+
+      /* ----- filter ----- */
+      var fwrap = document.getElementById('filters');
+      function renderFilters() {
+        fwrap.innerHTML = FILTERS.map(function (f) {
+          var on = f[0] === active, n = count(f[0]);
+          return '<button type="button" data-f="' + f[0] + '" aria-pressed="' + on + '" class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 ' +
+            (on ? 'border-brand-600 bg-brand-600 text-white shadow-soft' : 'border-ink-200 bg-white text-ink-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700') + '">' + f[1] +
+            '<span class="grid min-w-[1.4rem] place-items-center rounded-full px-1.5 text-xs font-bold ' + (on ? 'bg-white/20 text-white' : 'bg-ink-100 text-ink-700') + '">' + n + '</span></button>';
+        }).join('');
+      }
+      fwrap.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-f]'); if (!b) return;
+        active = b.dataset.f; renderFilters(); renderList(true);
+        fwrap.querySelector('[data-f="' + active + '"]').focus();
+      });
+
+      /* ----- kartu orderan ----- */
+      function action(o) {
+        var base = 'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 ';
+        var pri = base + 'bg-brand-600 text-white shadow-soft hover:-translate-y-0.5 hover:bg-brand-700';
+        var sec = base + 'border-2 border-ink-200 bg-white text-ink-800 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700';
+        if (o.status === 'dalam-proses') return '<a href="workspace.html" class="' + pri + '">Buka Workspace <i data-lucide="arrow-right" class="h-4 w-4"></i></a>';
+        if (o.status === 'selesai')      return '<a href="workspace.html" class="' + sec + '">Lihat Workspace</a>';
+        if (o.status === 'disetujui')    return '<a href="#" class="' + pri + '">Bayar DP <i data-lucide="arrow-right" class="h-4 w-4"></i></a>';
+        if (o.status === 'ditolak')      return '<a href="harga.html" class="' + sec + '">Ajukan Ulang</a>';
+        return '<a href="#" class="' + sec + '">Lihat Detail</a>';
+      }
+      function card(o, i, animate) {
+        var s = STATUS[o.status], pct = o.total ? Math.round(o.done / o.total * 100) : null;
+        var note = o.status === 'disetujui' ? '<p class="mt-3 flex items-center gap-2 text-sm text-ink-600"><i data-lucide="info" class="h-4 w-4 shrink-0 text-brand-600"></i>Orderan disetujui. Selesaikan pembayaran DP untuk membuka Project Workspace.</p>' : '';
+        var prog = pct === null ? '' :
+          '<div class="mt-4"><div class="mb-1.5 flex items-center justify-between text-sm"><span class="font-semibold text-ink-600">Milestone ' + o.done + ' dari ' + o.total + '</span><span class="font-extrabold text-ink-900">' + pct + '%</span></div>' +
+          '<div class="h-2.5 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="Progress ' + o.title + '"><div class="bar-fill h-full rounded-full ' + (o.status === 'selesai' ? 'bg-[#15803D]' : 'bg-gradient-to-r from-brand-600 to-brand-400') + '" data-w="' + pct + '"></div></div></div>';
+        return '<article class="' + (animate ? 'card-in ' : '') + 'rounded-2xl border border-ink-200 bg-white p-5 shadow-soft transition duration-300 hover:border-brand-300 hover:shadow-lift sm:p-6" style="--d:' + (i * 70) + 'ms">' +
+          '<div class="flex flex-wrap items-start justify-between gap-3"><div class="min-w-0">' +
+            '<p class="text-xs font-bold tracking-wide text-ink-600">' + o.id + '</p>' +
+            '<h3 class="mt-0.5 text-lg font-extrabold text-ink-900">' + o.title + '</h3>' +
+            '<p class="mt-1 text-sm text-ink-600">Paket ' + o.pkg + ' · ' + o.date + '</p></div>' +
+            '<span class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ' + s.cls + '"><i data-lucide="' + s.icon + '" class="h-3.5 w-3.5"></i>' + s.label + '</span></div>' +
+          prog + note +
+          '<div class="mt-5 flex flex-col gap-3 border-t border-ink-100 pt-4 sm:flex-row sm:items-center sm:justify-between"><div><p class="text-xs font-semibold text-ink-600">Estimasi biaya</p><p class="font-extrabold text-ink-900">' + o.price + '</p></div>' + action(o) + '</div></article>';
+      }
+
+      var list = document.getElementById('list'), lstat = document.getElementById('list-status');
+      function renderList(animate) {
+        var rows = ORDERS.filter(function (o) { return active === 'semua' || o.status === active; });
+        if (!rows.length) {
+          var all = active === 'semua';
+          list.innerHTML = '<div class="card-in rounded-2xl border border-ink-200 bg-white px-6 py-14 text-center shadow-soft"><span class="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-50 text-brand-600"><i data-lucide="package-open" class="h-8 w-8"></i></span>' +
+            '<h3 class="mt-5 text-lg font-extrabold text-ink-900">' + (all ? 'Belum ada orderan' : 'Tidak ada orderan berstatus ' + STATUS[active].label) + '</h3>' +
+            '<p class="mx-auto mt-1.5 max-w-sm text-ink-600">' + (all ? 'Orderan Anda akan muncul di sini setelah Anda memesan paket.' : 'Coba pilih status lain untuk melihat orderan Anda.') + '</p>' +
+            (all ? '<a href="harga.html" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Pilih Paket <i data-lucide="arrow-right" class="h-4 w-4"></i></a>'
+                   : '<button type="button" data-f="semua" class="mt-6 inline-flex items-center rounded-xl border-2 border-ink-200 px-5 py-2.5 text-sm font-bold text-ink-800 transition hover:border-brand-400 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Lihat Semua Orderan</button>') + '</div>';
+          list.querySelectorAll('[data-f]').forEach(function (b) { b.addEventListener('click', function () { active = 'semua'; renderFilters(); renderList(true); }); });
+        } else {
+          list.innerHTML = rows.map(function (o, i) { return card(o, i, animate !== false); }).join('');
+        }
+        icons();
+        requestAnimationFrame(function () { requestAnimationFrame(function () {
+          list.querySelectorAll('.bar-fill').forEach(function (b) { b.style.width = b.dataset.w + '%'; if (reduce) b.style.transition = 'none'; });
+        }); });
+        lstat.textContent = 'Menampilkan ' + rows.length + ' orderan' + (active === 'semua' ? '' : ' berstatus ' + STATUS[active].label);
+      }
+
+      renderFilters(); renderList(true); icons();
+
+      /* ----- navbar ----- */
+      var nav = document.getElementById('navbar');
+      function onScroll() {
+        var s = window.scrollY > 8;
+        nav.classList.toggle('shadow-soft', s); nav.classList.toggle('border-ink-200', s); nav.classList.toggle('border-transparent', !s);
+      }
+      onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+      var btn = document.getElementById('menu-btn'), menu = document.getElementById('mobile-menu');
+      function setMenu(open) {
+        menu.classList.toggle('hidden', !open);
+        btn.setAttribute('aria-expanded', String(open)); btn.setAttribute('aria-label', open ? 'Tutup menu' : 'Buka menu');
+        btn.innerHTML = '<i data-lucide="' + (open ? 'x' : 'menu') + '" class="h-6 w-6"></i>'; icons();
+      }
+      btn.addEventListener('click', function () { setMenu(btn.getAttribute('aria-expanded') !== 'true'); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+    })();
+  </script>
+
+  <script>
+    /* Menu akun (dropdown) */
+    (function () {
+      var wrap = document.getElementById('user-wrap'), btn = document.getElementById('user-btn'), menu = document.getElementById('user-menu');
+      var items = function () { return Array.prototype.slice.call(menu.querySelectorAll('[role=menuitem]')); };
+      function setOpen(o, focusFirst) {
+        menu.classList.toggle('hidden', !o);
+        btn.setAttribute('aria-expanded', String(o));
+        if (o) { menu.classList.remove('menu-in'); void menu.offsetWidth; menu.classList.add('menu-in'); if (focusFirst) items()[0].focus(); }
+      }
+      btn.addEventListener('click', function () { setOpen(menu.classList.contains('hidden'), false); });
+      btn.addEventListener('keydown', function (e) { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true, true); } });
+      document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) setOpen(false); });
+      document.addEventListener('keydown', function (e) {
+        if (menu.classList.contains('hidden')) return;
+        var list = items(), i = list.indexOf(document.activeElement);
+        if (e.key === 'Escape') { setOpen(false); btn.focus(); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); list[(i + 1) % list.length].focus(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); list[(i - 1 + list.length) % list.length].focus(); }
+        else if (e.key === 'Tab') { setOpen(false); }
+      });
+    })();
+  </script>
+</body>
+</html>

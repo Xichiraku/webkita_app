@@ -6,6 +6,18 @@ import {
   UpdatePricingPlanBody,
 } from "../types/pricing";
 
+/** min wajib angka ≥ 0; max boleh null (tanpa batas atas), jika diisi harus > min */
+export function assertPriceRange(min: unknown, max: unknown) {
+  if (typeof min !== "number" || !Number.isFinite(min) || min < 0) {
+    throw new Error("min_price harus berupa angka 0 atau lebih");
+  }
+  if (max === null || max === undefined) return;
+  if (typeof max !== "number" || !Number.isFinite(max)) {
+    throw new Error("max_price harus berupa angka atau null (tanpa batas atas)");
+  }
+  if (max <= min) throw new Error("max_price harus lebih besar dari min_price");
+}
+
 const SELECT_WITH_DETAILS = `
   *,
   features:plan_features(id, feature, sort_order),
@@ -67,10 +79,11 @@ export class PricingService {
   // ── Create ────────────────────────────────────────────
   async create(body: CreatePricingPlanBody): Promise<PricingPlanWithDetails> {
     const { features, not_included, ...planData } = body;
+    assertPriceRange(planData.min_price, planData.max_price ?? null);
 
     const { data: plan, error } = await this.supabase
       .from("pricing_plans")
-      .insert(planData)
+      .insert({ ...planData, max_price: planData.max_price ?? null })
       .select()
       .single();
 
@@ -104,6 +117,14 @@ export class PricingService {
   // ── Update ────────────────────────────────────────────
   async update(id: string, body: UpdatePricingPlanBody): Promise<PricingPlanWithDetails> {
     const { features, not_included, ...planData } = body;
+
+    if ("min_price" in planData || "max_price" in planData) {
+      const current = await this.getById(id);
+      assertPriceRange(
+        "min_price" in planData ? planData.min_price : current.min_price,
+        "max_price" in planData ? planData.max_price : current.max_price,
+      );
+    }
 
     if (Object.keys(planData).length > 0) {
       const { error } = await this.supabase

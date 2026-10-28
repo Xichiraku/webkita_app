@@ -1,159 +1,218 @@
-import React, { useState, useRef, useEffect } from "react";
-import { ArrowLeft, AlertCircle, KeyRound } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { CircleAlert, MailCheck } from "lucide-react";
 import { useUser } from "../../provider/user_provider";
+import { ButtonSpinner } from "../../components/ui/Spinner";
+import ResetShell, { StepHeader } from "./ResetShell";
+import { BTN_ARIA_OFF, BTN_PRIMARY } from "../../utils/ui";
+
+const OTP_LEN = 6;
+const OTP_TTL = 300;      // detik, sama dengan masa berlaku kode di backend (5 menit)
+const RESEND_WAIT = 60;   // detik
+
+const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+const empty = () => Array(OTP_LEN).fill("");
+
+const maskEmail = (m = "") => {
+  const [u = "", d = ""] = m.split("@");
+  const head = u.length <= 2 ? u.slice(0, 1) : u[0] + "*".repeat(Math.min(u.length - 2, 5)) + u[u.length - 1];
+  return `${head}@${d}`;
+};
 
 function VerifyOTP({ email, onBackToForgot, onOTPVerified }) {
-  const { verifyOtp } = useUser();
+  const { verifyOtp, forgotPassword } = useUser();
+  const cardRef = useRef(null);
+  const cells = useRef([]);
 
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState(empty);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [expLeft, setExpLeft] = useState(OTP_TTL);
+  const [resendLeft, setResendLeft] = useState(RESEND_WAIT);
+  const [resending, setResending] = useState(false);
 
-  const inputRefs = useRef([]);
+  // Halaman dibuka langsung/refresh → email hilang, ulangi dari awal
+  useEffect(() => { if (!email) onBackToForgot?.(); }, [email, onBackToForgot]);
+  useEffect(() => { cells.current[0]?.focus(); }, []);
 
   useEffect(() => {
-    inputRefs.current[0]?.focus();
+    const t = setInterval(() => {
+      setExpLeft((v) => (v > 0 ? v - 1 : 0));
+      setResendLeft((v) => (v > 0 ? v - 1 : 0));
+    }, 1000);
+    return () => clearInterval(t);
   }, []);
 
-  const otpValue = otp.join("");
-  const isOtpComplete = otpValue.length === 6;
+  const expired = expLeft <= 0;
+  const code = otp.join("");
+  const complete = code.length === OTP_LEN;
+  const disabled = !complete || expired || loading;
 
-  const handleOtpChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return;
-    const newOtp = [...otp];
-    newOtp[index] = value.slice(-1);
-    setOtp(newOtp);
-    if (error) setError("");
-    if (value && index < 5) inputRefs.current[index + 1]?.focus();
+  const shake = () => {
+    const el = cardRef.current; if (!el) return;
+    el.classList.remove("animate-shake"); void el.offsetWidth; el.classList.add("animate-shake");
   };
 
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === "Backspace") {
-      if (otp[index]) {
-        const newOtp = [...otp];
-        newOtp[index] = "";
-        setOtp(newOtp);
-      } else if (index > 0) {
-        inputRefs.current[index - 1]?.focus();
-      }
-    }
-    if (e.key === "ArrowLeft" && index > 0) inputRefs.current[index - 1]?.focus();
-    if (e.key === "ArrowRight" && index < 5) inputRefs.current[index + 1]?.focus();
-  };
-
-  const handleOtpPaste = (e) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (!pasted) return;
-    const newOtp = [...otp];
-    pasted.split("").forEach((char, i) => { newOtp[i] = char; });
-    setOtp(newOtp);
-    inputRefs.current[Math.min(pasted.length, 5)]?.focus();
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!isOtpComplete) return;
-
+  const submit = useCallback(async (value) => {
+    if (loading || expired) return;
     setLoading(true);
     setError("");
-
-    const result = await verifyOtp(email, otpValue);
-
+    setInfo("");
+    const result = await verifyOtp(email, value);
     setLoading(false);
 
     if (!result.success) {
       setError(result.message || "Kode OTP tidak valid atau sudah kedaluwarsa.");
-      setOtp(["", "", "", "", "", ""]);
-      inputRefs.current[0]?.focus();
+      setOtp(empty());
+      shake();
+      requestAnimationFrame(() => cells.current[0]?.focus());
       return;
     }
-
     onOTPVerified({ resetToken: result.resetToken, email });
+  }, [email, expired, loading, onOTPVerified, verifyOtp]);
+
+  const fillFrom = (index, digits) => {
+    const next = [...otp];
+    for (let k = 0; k < digits.length && index + k < OTP_LEN; k++) next[index + k] = digits[k];
+    setOtp(next);
+    setError("");
+    const last = Math.min(OTP_LEN - 1, index + digits.length);
+    cells.current[last]?.focus();
+    cells.current[last]?.select();
+    if (next.every(Boolean)) setTimeout(() => submit(next.join("")), 120);
+  };
+
+  const onChange = (i, raw) => {
+    const d = raw.replace(/\D/g, "");
+    if (!d) {
+      const next = [...otp]; next[i] = ""; setOtp(next); setError("");
+      return;
+    }
+    fillFrom(i, d);
+  };
+
+  const onKeyDown = (i, e) => {
+    if (e.key === "Backspace" && !otp[i] && i > 0) {
+      e.preventDefault();
+      const next = [...otp]; next[i - 1] = ""; setOtp(next);
+      cells.current[i - 1]?.focus();
+    } else if (e.key === "ArrowLeft" && i > 0) { e.preventDefault(); cells.current[i - 1]?.focus(); }
+    else if (e.key === "ArrowRight" && i < OTP_LEN - 1) { e.preventDefault(); cells.current[i + 1]?.focus(); }
+    else if (e.key === "Home") { e.preventDefault(); cells.current[0]?.focus(); }
+    else if (e.key === "End") { e.preventDefault(); cells.current[OTP_LEN - 1]?.focus(); }
+  };
+
+  const onPaste = (i, e) => {
+    const t = e.clipboardData.getData("text").replace(/\D/g, "");
+    if (!t) return;
+    e.preventDefault();
+    const next = [...otp];
+    for (let k = i; k < OTP_LEN; k++) next[k] = "";
+    setOtp(next);
+    // pakai nilai bersih: isi ulang dari posisi i
+    const merged = [...next];
+    for (let k = 0; k < t.length && i + k < OTP_LEN; k++) merged[i + k] = t[k];
+    setOtp(merged);
+    setError("");
+    cells.current[Math.min(OTP_LEN - 1, i + t.length)]?.focus();
+    if (merged.every(Boolean)) setTimeout(() => submit(merged.join("")), 120);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (loading || expired) return;
+    if (!complete) {
+      setError(`Masukkan ${OTP_LEN} digit kode OTP.`);
+      shake();
+      cells.current[Math.max(0, code.length)]?.focus();
+      return;
+    }
+    submit(code);
+  };
+
+  const resend = async () => {
+    if (resendLeft > 0 || resending) return;
+    setResending(true);
+    setError("");
+    setInfo("");
+    const result = await forgotPassword(email);
+    setResending(false);
+    if (!result.success) { setError(result.message || "Gagal mengirim ulang kode. Coba lagi."); return; }
+    setOtp(empty());
+    setExpLeft(OTP_TTL);
+    setResendLeft(RESEND_WAIT);
+    setInfo("Kode baru sudah dikirim.");
+    cells.current[0]?.focus();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full space-y-8">
-        <button
-          onClick={onBackToForgot}
-          className="inline-flex items-center text-gray-600 hover:text-gray-900 transition font-medium"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
-        </button>
-
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-          <div className="flex justify-center mb-6">
-            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
-              <KeyRound className="w-6 h-6 text-gray-700" />
-            </div>
-          </div>
-
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Verifikasi OTP</h2>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              Masukkan kode 6 digit yang dikirim ke{" "}
-              <span className="font-semibold text-gray-700">{email}</span>
-            </p>
-            <p className="text-xs text-gray-400 mt-1">Kode berlaku selama 5 menit</p>
-          </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-              <AlertCircle className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3 text-center">
-                Kode OTP
-              </label>
-              <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(el) => (inputRefs.current[index] = el)}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(index, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    disabled={loading}
-                    className={`w-11 text-center text-xl font-bold border-2 rounded-lg outline-none transition disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                      digit
-                        ? "border-gray-900 bg-gray-50"
-                        : "border-gray-300 focus:border-gray-600"
-                    }`}
-                    style={{ height: "52px" }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !isOtpComplete}
-              className="w-full bg-gray-900 text-white py-4 rounded-lg font-bold hover:bg-gray-800 transition shadow-lg active:scale-[0.98] disabled:bg-gray-400 disabled:scale-100 flex items-center justify-center"
-            >
-              {loading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Memverifikasi...
-                </span>
-              ) : (
-                "Verifikasi OTP"
-              )}
-            </button>
-          </form>
-        </div>
+    <ResetShell current={1} onBack={onBackToForgot} backLabel="Kembali ke Login" cardRef={cardRef}>
+      <StepHeader icon={MailCheck} title="Masukkan Kode OTP">
+        Jika <b className="[overflow-wrap:anywhere] text-ink-900">{maskEmail(email)}</b> terdaftar, kami telah mengirim kode 6 digit ke email tersebut.
+      </StepHeader>
+      <div className="mt-1 text-center">
+        <button type="button" onClick={onBackToForgot} className="rounded text-sm font-bold text-brand-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Ganti email</button>
       </div>
-    </div>
+
+      <form className="mt-7" onSubmit={handleSubmit} noValidate>
+        <div role="group" aria-labelledby="otp-lbl">
+          <p id="otp-lbl" className="sr-only">Kode OTP 6 digit</p>
+          <div className="flex justify-center gap-2 sm:gap-3">
+            {otp.map((d, i) => (
+              <input
+                key={i}
+                ref={(el) => { cells.current[i] = el; }}
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]*"
+                value={d}
+                disabled={loading}
+                onChange={(e) => onChange(i, e.target.value)}
+                onKeyDown={(e) => onKeyDown(i, e)}
+                onPaste={(e) => onPaste(i, e)}
+                onFocus={(e) => e.target.select()}
+                aria-label={`Digit ${i + 1} dari ${OTP_LEN}`}
+                aria-describedby="otp-err"
+                aria-invalid={error ? true : undefined}
+                className="h-14 w-11 rounded-xl border border-ink-300 bg-white text-center text-2xl font-extrabold tabular-nums text-ink-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 disabled:bg-ink-50 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FECACA] sm:h-16 sm:w-14"
+              />
+            ))}
+          </div>
+          {error && (
+            <p id="otp-err" className="mt-3 flex items-start justify-center gap-1.5 text-center text-sm font-semibold text-[#B91C1C]" role="alert">
+              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> <span>{error}</span>
+            </p>
+          )}
+          {info && !error && <p className="mt-3 text-center text-sm font-semibold text-[#15803D]" role="status">{info}</p>}
+        </div>
+
+        <p className="mt-4 text-center text-sm text-ink-600">
+          {expired
+            ? <span className="font-semibold text-[#B91C1C]">Kode kedaluwarsa. Kirim ulang kode baru.</span>
+            : <>Kode berlaku <b className="tabular-nums text-ink-900">{fmt(expLeft)}</b></>}
+        </p>
+
+        <button type="submit" aria-disabled={disabled} className={`mt-6 h-12 w-full text-[15px] ${BTN_PRIMARY}${BTN_ARIA_OFF}`}>
+          {loading && <ButtonSpinner />}
+          {loading ? "Memeriksa…" : "Verifikasi"}
+        </button>
+      </form>
+
+      <p className="mt-5 text-center text-sm text-ink-600">
+        Tidak menerima kode?{" "}
+        <button
+          type="button"
+          onClick={resend}
+          aria-disabled={resendLeft > 0 || resending}
+          className="rounded font-bold text-brand-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 aria-disabled:cursor-not-allowed aria-disabled:text-ink-500 aria-disabled:no-underline"
+        >
+          {resending ? "Mengirim…" : "Kirim ulang"}
+        </button>{" "}
+        {resendLeft > 0 && <span className="tabular-nums text-ink-600">({fmt(resendLeft)})</span>}
+      </p>
+      <p className="mt-3 text-center text-xs text-ink-600">Cek juga folder spam.</p>
+    </ResetShell>
   );
 }
 

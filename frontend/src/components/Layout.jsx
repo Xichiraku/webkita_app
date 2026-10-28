@@ -3,47 +3,19 @@ import Navbar from "./navbar";
 import Footer from "./Footer";
 
 /**
- *
- * @param {object} props
- * @param {React.ReactNode} props.children
- * @param {function} props.onLoginClick
- * @param {function} props.onCaraKerjaClick
- * @param {function} props.onNavigateHome
- * @param {function} props.onProfileClick
- * @param {function} props.onHargaClick
- * @param {function} props.onRegisterClick
- * @param {function} props.onOrderanClick
- * @param {string} props.currentPage
+ * Kerangka halaman publik: navbar + konten + footer.
+ * Navigasi kini ditangani langsung oleh Navbar (react-router), jadi props
+ * on*Click lama tidak lagi dibutuhkan.
  */
-export default function Layout({
-  children,
-  onLoginClick,
-  onCaraKerjaClick,
-  onNavigateHome,
-  onRegisterClick,
-  onProfileClick,
-  onHargaClick,
-  onOrderanClick,
-  currentPage,
-}) {
-  const hideNavAndFooter = ["login", "register" , "profile"];
-  const shouldHide = hideNavAndFooter.includes(currentPage);
-  
+export default function Layout({ children }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {!shouldHide && (
-        <Navbar
-          onLoginClick={onLoginClick}
-          onCaraKerjaClick={onCaraKerjaClick}
-          onNavigateHome={onNavigateHome}
-          onHargaClick={onHargaClick}
-          onProfileClick={onProfileClick}
-          onOrderanClick={onOrderanClick}
-          onRegisterClick={onRegisterClick}
-        />
-      )}
-      <main className="flex-grow">{children}</main>
-      {!shouldHide && <Footer />}
+    <div className="flex min-h-screen flex-col bg-white">
+      <a href="#utama" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-white">
+        Lewati ke konten utama
+      </a>
+      <Navbar />
+      <div id="utama" className="flex-grow">{children}</div>
+      <Footer />
     </div>
   );
 }

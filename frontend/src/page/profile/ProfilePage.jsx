@@ -1,353 +1,279 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  User,
-  Mail,
-  Phone,
-  Shield,
-  Calendar,
-  Edit,
-  Save,
-  X,
-  CheckCircle,
-  AlertCircle,
-  RefreshCw,
-  Users,
-  Lock,
-  Bell,
+  ArrowRight, AtSign, Bell, Calendar, CircleAlert, CircleCheck, Lock, Mail, Phone, Save, Shield, SquarePen, User, X,
 } from "lucide-react";
 import { useUser } from "../../provider/user_provider";
+import FieldError from "../../components/ui/FieldError";
+import Toast from "../../components/ui/Toast";
+import PageLoader, { ButtonSpinner } from "../../components/ui/Spinner";
+import useToast from "../../hooks/useToast";
+import { formatDateLong, PHONE_RE, USERNAME_RE } from "../../utils/format";
+import { BTN_PRIMARY, BTN_SECONDARY, INPUT } from "../../utils/ui";
 
-const ProfileDashboard = () => {
-  const { user, loading, error, updateProfile, setError } = useUser();
+const ROLE = { user: "Pembeli", developer: "Developer", admin: "Admin" };
+const EDIT = ["username", "first_name", "last_name", "phone"];
 
-  const [isEditing, setIsEditing] = useState(false);
+const RULES = {
+  username: (v) => (!v ? "Username wajib diisi." : !USERNAME_RE.test(v) ? "Gunakan 3-30 karakter: huruf, angka, titik, garis bawah, atau tanda hubung." : ""),
+  first_name: (v) => (v.length > 50 ? "Maksimal 50 karakter." : ""),
+  last_name: (v) => (v.length > 50 ? "Maksimal 50 karakter." : ""),
+  phone: (v) => { const p = v.replace(/[\s-]/g, ""); return !p || PHONE_RE.test(p) ? "" : "Gunakan nomor Indonesia, contoh 08123456789."; },
+};
+
+const LABEL_CLS = "block text-xs font-bold uppercase tracking-wide text-ink-600";
+const VIEW_CLS = "mt-1.5 flex min-h-[2.5rem] items-center gap-2.5 text-[17px] text-ink-900";
+
+export default function ProfilePage() {
+  const navigate = useNavigate();
+  const { user, loading, initializing, error, updateProfile, setError } = useUser();
+  const [toast, showToast] = useToast(3800);
+
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(null);
-  const [editForm, setEditForm] = useState(null);
+  const [form, setForm] = useState(null);
+  const [errors, setErrors] = useState({});
+  const formRef = useRef(null);
+  const editBtnRef = useRef(null);
 
-  const startEditing = () => {
-    setEditForm({
+  const startEdit = () => {
+    setForm({
       username: user?.username || "",
       first_name: user?.firstName || "",
       last_name: user?.lastName || "",
       phone: user?.phone || "",
-      subscribe_newsletter: user?.subscribeNewsletter || false,
+      subscribe_newsletter: !!user?.subscribeNewsletter,
     });
-    setIsEditing(true);
+    setErrors({});
+    setError("");
+    setEditing(true);
+  };
+  const cancel = () => { setEditing(false); setForm(null); setErrors({}); requestAnimationFrame(() => editBtnRef.current?.focus()); };
+
+  useEffect(() => { if (editing) document.getElementById("f-username")?.focus(); }, [editing]);
+  useEffect(() => {
+    if (!editing) return undefined;
+    const onKey = (e) => { if (e.key === "Escape" && !saving) cancel(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [editing, saving]);
+
+  const change = (k, v) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    if (errors[k] && RULES[k]) setErrors((e) => ({ ...e, [k]: RULES[k](String(v).trim()) }));
   };
 
-  const handleInputChange = (field, value) => {
-    setEditForm((prev) => ({ ...prev, [field]: value }));
+  const shake = () => {
+    const el = formRef.current; if (!el) return;
+    el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
   };
 
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditForm(null);
-  };
+  const submit = async (e) => {
+    e.preventDefault();
+    const errs = {};
+    EDIT.forEach((k) => { const m = RULES[k](String(form[k]).trim()); if (m) errs[k] = m; });
+    setErrors(errs);
+    const bad = EDIT.find((k) => errs[k]);
+    if (bad) { document.getElementById(`f-${bad}`)?.focus(); shake(); return; }
 
-  const handleUpdateProfile = async () => {
     setSaving(true);
-    const result = await updateProfile(editForm);
+    const payload = {
+      username: form.username.trim(),
+      first_name: form.first_name.trim(),
+      last_name: form.last_name.trim(),
+      phone: form.phone.replace(/[\s-]/g, ""),
+      subscribe_newsletter: form.subscribe_newsletter,
+    };
+    const result = await updateProfile(payload);
     setSaving(false);
-
     if (result.success) {
-      setIsEditing(false);
-      setEditForm(null);
-      setSuccessMessage("Profil berhasil diperbarui!");
-      setTimeout(() => setSuccessMessage(null), 3000);
+      setEditing(false);
+      setForm(null);
+      showToast("Perubahan profil disimpan.");
+      requestAnimationFrame(() => editBtnRef.current?.focus());
+    } else {
+      shake();
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return "-";
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(date);
-  };
-
-  const getRoleBadge = (role) => {
-    const roleConfig = {
-      user: { label: "Pembeli", color: "bg-blue-100 text-blue-800 border-blue-300" },
-      developer: { label: "Developer", color: "bg-purple-100 text-purple-800 border-purple-300" },
-      admin: { label: "Admin", color: "bg-red-100 text-red-800 border-red-300" },
-    };
-    return roleConfig[role] || roleConfig.user;
-  };
-
-  const getStatusBadge = (isAktif) =>
-    isAktif === "Y"
-      ? { label: "Aktif", color: "bg-green-100 text-green-800 border-green-300", icon: CheckCircle }
-      : { label: "Tidak Aktif", color: "bg-gray-100 text-gray-800 border-gray-300", icon: X };
-
-  if (loading && !user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-semibold">Memuat profil...</p>
-        </div>
-      </div>
-    );
+  if ((initializing || loading) && !user) {
+    return <div className="bg-gradient-to-b from-brand-50 to-ink-50"><PageLoader label="Memuat profil…" /></div>;
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Gagal Memuat Profil</h2>
-          <p className="text-gray-600 mb-6">
-            {error || "Anda belum login. Silakan login terlebih dahulu."}
-          </p>
+      <main className="grid min-h-[60vh] place-items-center bg-gradient-to-b from-brand-50 to-ink-50 p-5">
+        <div className="w-full max-w-md rounded-3xl border border-ink-200 bg-white p-8 text-center shadow-soft">
+          <CircleAlert className="mx-auto h-12 w-12 text-[#DC2626]" aria-hidden="true" />
+          <h2 className="mt-4 text-2xl font-extrabold">Gagal Memuat Profil</h2>
+          <p className="mt-2 text-ink-600">{error || "Anda belum login. Silakan login terlebih dahulu."}</p>
+          <button type="button" onClick={() => navigate("/login")} className={`mt-6 px-5 py-3 ${BTN_PRIMARY}`}>Masuk</button>
         </div>
-      </div>
+      </main>
     );
   }
 
-  const roleBadge = getRoleBadge(user.role);
-  const statusBadge = getStatusBadge(user.isAktif);
-  const StatusIcon = statusBadge.icon;
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || "Pengguna";
+  const active = user.isAktif === "Y" || user.isAktif === true;
+  const view = { username: user.username, email: user.email, first_name: user.firstName, last_name: user.lastName, phone: user.phone };
+
+  const inputFor = (k, props) => (
+    <div className="mt-1.5">
+      <input
+        id={`f-${k}`}
+        value={form[k]}
+        onChange={(e) => change(k, e.target.value)}
+        onBlur={(e) => { if (e.target.value && RULES[k]) setErrors((er) => ({ ...er, [k]: RULES[k](e.target.value.trim()) })); }}
+        aria-invalid={errors[k] ? true : undefined}
+        aria-describedby={`f-${k}-err`}
+        className={INPUT}
+        {...props}
+      />
+      <FieldError id={`f-${k}-err`} msg={errors[k]} />
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Profil Pengguna</h1>
-            <p className="text-gray-600">Kelola informasi akun Anda</p>
-          </div>
+    <main className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-ink-50">
+      <div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 animate-blob rounded-full bg-brand-100 opacity-70 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute -right-24 top-96 h-72 w-72 animate-blob rounded-full bg-brand-200/50 blur-3xl" style={{ animationDelay: "-7s" }} aria-hidden="true" />
+
+      <div className="relative mx-auto max-w-3xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
+        <div className="animate-rise">
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">Profil Pengguna</h1>
+          <p className="mt-1.5 text-ink-600">Kelola informasi akun Anda.</p>
         </div>
 
-        {successMessage && (
-          <div className="mb-6 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
-            <CheckCircle className="w-5 h-5" />
-            <span>{successMessage}</span>
+        {/* ===== Kartu identitas ===== */}
+        <section aria-label="Identitas akun" className="mt-8 animate-rise overflow-hidden rounded-3xl border border-ink-200 bg-white shadow-lift" style={{ animationDelay: "80ms" }}>
+          <div className="relative h-32 bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 sm:h-36">
+            <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
+            <div className="absolute bottom-0 left-1/3 h-24 w-24 rounded-full bg-brand-400/20 blur-2xl" aria-hidden="true" />
           </div>
-        )}
-
-        {error && (
-          <div className="mb-6 bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            <span>{error}</span>
-            <button onClick={() => setError("")} className="ml-auto">
-              <X className="w-4 h-4" />
-            </button>
+          <div className="px-6 pb-7 sm:px-8">
+            <div className="-mt-14 flex flex-col gap-4 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
+                <span className="relative z-10 grid h-28 w-28 shrink-0 place-items-center rounded-full border-4 border-white bg-white text-brand-600 shadow-lift sm:h-32 sm:w-32">
+                  <User className="h-14 w-14 sm:h-16 sm:w-16" strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                <div className="pb-1">
+                  <h2 className="text-2xl font-extrabold tracking-tight text-ink-900">{fullName}</h2>
+                  <p className="text-ink-600">@{user.username}</p>
+                </div>
+              </div>
+              {!editing && (
+                <button ref={editBtnRef} type="button" onClick={startEdit} className={`self-start px-5 py-3 text-sm sm:self-end ${BTN_PRIMARY}`}>
+                  <SquarePen className="h-4 w-4" aria-hidden="true" /> Edit Profil
+                </button>
+              )}
+            </div>
+            <ul className="mt-5 flex flex-wrap gap-2" aria-label="Status akun">
+              <li className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1 text-xs font-bold text-brand-800"><Shield className="h-3.5 w-3.5" aria-hidden="true" /> {ROLE[user.role] || ROLE.user}</li>
+              <li className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${active ? "bg-[#DCFCE7] text-[#15803D]" : "bg-ink-100 text-ink-700"}`}>
+                {active ? <CircleCheck className="h-3.5 w-3.5" aria-hidden="true" /> : <X className="h-3.5 w-3.5" aria-hidden="true" />} {active ? "Aktif" : "Tidak Aktif"}
+              </li>
+            </ul>
           </div>
-        )}
+        </section>
 
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-32" />
+        {/* ===== Informasi detail ===== */}
+        <form ref={formRef} noValidate onSubmit={submit} className="mt-6 animate-rise rounded-3xl border border-ink-200 bg-white p-6 shadow-soft sm:p-8" style={{ animationDelay: "140ms" }} aria-labelledby="detail-title">
+          <h2 id="detail-title" className="flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-ink-900">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-100 text-brand-700"><User className="h-5 w-5" aria-hidden="true" /></span> Informasi Detail
+          </h2>
 
-          <div className="relative px-6 pb-6">
-            <div className="flex items-end -mt-16 mb-4">
-              <div className="w-32 h-32 bg-white rounded-full shadow-lg border-4 border-white flex items-center justify-center">
-                <User className="w-16 h-16 text-blue-600" />
-              </div>
-              <div className="ml-4 mb-2">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {user.firstName || user.lastName
-                    ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
-                    : user.username || "User"}
-                </h2>
-                <p className="text-gray-600">@{user.username}</p>
-              </div>
+          {error && editing && (
+            <p className="mt-5 flex items-start gap-2.5 rounded-xl bg-[#FEF2F2] p-4 text-sm font-semibold text-[#7F1D1D]" role="alert">
+              <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#B91C1C]" aria-hidden="true" /> {error}
+            </p>
+          )}
+
+          <div className="mt-7 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="f-username" className={LABEL_CLS}>Username</label>
+              {editing ? (
+                <>
+                  {inputFor("username", { type: "text", placeholder: "Contoh: budisudono", autoComplete: "username" })}
+                  {!errors.username && <p className="mt-1.5 text-sm text-ink-600">3-30 karakter: huruf, angka, titik, garis bawah, atau tanda hubung.</p>}
+                </>
+              ) : (
+                <p className={VIEW_CLS}><AtSign className="h-[18px] w-[18px] shrink-0 text-ink-500" aria-hidden="true" /><span className="break-all">{view.username || "-"}</span></p>
+              )}
             </div>
 
-            <div className="flex flex-wrap gap-2 mb-6">
-              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${roleBadge.color}`}>
-                <Shield className="w-3 h-3 inline mr-1" />
-                {roleBadge.label}
-              </span>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusBadge.color}`}>
-                <StatusIcon className="w-3 h-3 inline mr-1" />
-                {statusBadge.label}
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-bold border bg-gray-100 text-gray-800 border-gray-300">
-                <Users className="w-3 h-3 inline mr-1" />
-                Group ID: {user.groupId}
-              </span>
+            <div>
+              <p className={LABEL_CLS}>Email</p>
+              <p className={VIEW_CLS}><Mail className="h-[18px] w-[18px] shrink-0 text-ink-500" aria-hidden="true" /><span className="break-all">{view.email || "-"}</span></p>
+              {editing && <p className="mt-1 text-sm text-ink-600">Email tidak dapat diubah dari sini.</p>}
             </div>
 
-            {!isEditing && (
-              <button
-                onClick={startEditing}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
-              >
-                <Edit className="w-4 h-4" />
-                Edit Profil
+            <div>
+              <label htmlFor="f-first_name" className={LABEL_CLS}>Nama Depan</label>
+              {editing ? inputFor("first_name", { type: "text", placeholder: "Nama depan", autoComplete: "given-name" }) : <p className={VIEW_CLS}>{view.first_name || "-"}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="f-last_name" className={LABEL_CLS}>Nama Belakang</label>
+              {editing ? inputFor("last_name", { type: "text", placeholder: "Nama belakang", autoComplete: "family-name" }) : <p className={VIEW_CLS}>{view.last_name || "-"}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="f-phone" className={LABEL_CLS}>Nomor Telepon</label>
+              {editing ? inputFor("phone", { type: "tel", placeholder: "08123456789", autoComplete: "tel" }) : (
+                <p className={VIEW_CLS}><Phone className="h-[18px] w-[18px] shrink-0 text-ink-500" aria-hidden="true" />{view.phone || "-"}</p>
+              )}
+            </div>
+
+            <div>
+              <p className={LABEL_CLS}>Tanggal Bergabung</p>
+              <p className={VIEW_CLS}><Calendar className="h-[18px] w-[18px] shrink-0 text-ink-500" aria-hidden="true" />{formatDateLong(user.createdAt)}</p>
+            </div>
+          </div>
+
+          <label className={`mt-6 flex items-start gap-3 rounded-2xl bg-ink-50 p-4 ${editing ? "cursor-pointer" : "cursor-default"}`}>
+            <input
+              type="checkbox"
+              disabled={!editing}
+              checked={editing ? form.subscribe_newsletter : !!user.subscribeNewsletter}
+              onChange={(e) => change("subscribe_newsletter", e.target.checked)}
+              className="mt-1 h-5 w-5 shrink-0 rounded border-ink-400 accent-brand-600 disabled:opacity-100"
+            />
+            <span>
+              <span className="flex items-center gap-2 font-bold text-ink-900"><Bell className="h-4 w-4 text-ink-600" aria-hidden="true" /> Subscribe Newsletter</span>
+              <span className="mt-0.5 block text-sm text-ink-600">Terima update dan informasi terbaru via email.</span>
+            </span>
+          </label>
+
+          {editing && (
+            <div className="mt-7 flex flex-col gap-3 border-t border-ink-200 pt-6 sm:flex-row">
+              <button type="submit" disabled={saving} className={`px-6 py-3 ${BTN_PRIMARY} disabled:cursor-wait`}>
+                {saving ? <ButtonSpinner /> : <Save className="h-4 w-4" aria-hidden="true" />}
+                {saving ? "Menyimpan…" : "Simpan Perubahan"}
               </button>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <User className="w-6 h-6 text-blue-600" />
-            Informasi Detail
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-2 block">Username</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editForm.username}
-                  onChange={(e) => handleInputChange("username", e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : (
-                <div className="flex items-center gap-2 text-gray-700">
-                  <User className="w-4 h-4 text-gray-400" />
-                  <span>{user.username || "-"}</span>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-2 block">Email</label>
-              <div className="flex items-center gap-2 text-gray-700">
-                <Mail className="w-4 h-4 text-gray-400" />
-                <span>{user.email || "-"}</span>
-              </div>
-              {isEditing && (
-                <p className="text-xs text-gray-400 mt-1">
-                  Email tidak dapat diubah dari sini.
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-2 block">Nama Depan</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editForm.first_name}
-                  onChange={(e) => handleInputChange("first_name", e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : (
-                <div className="text-gray-700">{user.firstName || "-"}</div>
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-2 block">Nama Belakang</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editForm.last_name}
-                  onChange={(e) => handleInputChange("last_name", e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : (
-                <div className="text-gray-700">{user.lastName || "-"}</div>
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-2 block">Nomor Telepon</label>
-              {isEditing ? (
-                <input
-                  type="tel"
-                  value={editForm.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : (
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Phone className="w-4 h-4 text-gray-400" />
-                  <span>{user.phone || "-"}</span>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-2 block">Tanggal Bergabung</label>
-              <div className="flex items-center gap-2 text-gray-700">
-                <Calendar className="w-4 h-4 text-gray-400" />
-                <span>{formatDate(user.createdAt)}</span>
-              </div>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="flex items-center gap-3 cursor-pointer">
-                {isEditing ? (
-                  <input
-                    type="checkbox"
-                    checked={editForm.subscribe_newsletter}
-                    onChange={(e) => handleInputChange("subscribe_newsletter", e.target.checked)}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                ) : (
-                  <div
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                      user.subscribeNewsletter ? "bg-blue-600 border-blue-600" : "border-gray-300"
-                    }`}
-                  >
-                    {user.subscribeNewsletter && <CheckCircle className="w-4 h-4 text-white" />}
-                  </div>
-                )}
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-700">Subscribe Newsletter</span>
-                  </div>
-                  <p className="text-xs text-gray-500 ml-6">
-                    Terima update dan informasi terbaru via email
-                  </p>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {isEditing && (
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={handleUpdateProfile}
-                disabled={saving}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
-              >
-                {saving ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                Simpan Perubahan
-              </button>
-              <button
-                onClick={handleCancelEdit}
-                disabled={saving}
-                className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2"
-              >
-                <X className="w-4 h-4" />
-                Batal
+              <button type="button" onClick={cancel} disabled={saving} className={`px-6 py-3 ${BTN_SECONDARY}`}>
+                <X className="h-4 w-4" aria-hidden="true" /> Batal
               </button>
             </div>
           )}
-        </div>
+        </form>
 
-        <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Lock className="w-6 h-6 text-blue-600" />
-            Keamanan Akun
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="font-semibold text-gray-900">Password</p>
-                <p className="text-sm text-gray-600">Reset lewat halaman "Lupa Password"</p>
-              </div>
+        {/* ===== Keamanan ===== */}
+        <section aria-labelledby="sec-title" className="mt-6 animate-rise rounded-3xl border border-ink-200 bg-white p-6 shadow-soft sm:p-8" style={{ animationDelay: "200ms" }}>
+          <h2 id="sec-title" className="flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-ink-900">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-100 text-brand-700"><Lock className="h-5 w-5" aria-hidden="true" /></span> Keamanan Akun
+          </h2>
+          <div className="mt-6 flex flex-col gap-4 rounded-2xl bg-ink-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-bold text-ink-900">Password</p>
+              <p className="mt-0.5 text-ink-600">Reset lewat halaman "Lupa Password".</p>
             </div>
+            <button type="button" onClick={() => navigate("/forgot-password")} className={`px-5 py-2.5 text-sm ${BTN_SECONDARY}`}>
+              Reset Password <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+      <Toast toast={toast} />
+    </main>
   );
-};
-
-export default ProfileDashboard;
+}

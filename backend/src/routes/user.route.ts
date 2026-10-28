@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { createSupabase } from '../lib/supabase'
 import { authMiddleware, roleMiddleware } from '../middleware/auth.middleware'
+import { validateUsername } from '../utils/validation'
 
 type Env = {
   SUPABASE_URL: string
@@ -28,8 +29,10 @@ userRoute.put('/me', authMiddleware, async (c) => {
     }
 
     if (typeof updates.username === 'string') {
-      if (updates.username.trim().length < 3) {
-        return c.json({ status: 'error', message: 'Username minimal 3 karakter' }, 400)
+      updates.username = updates.username.trim()
+      const usernameError = validateUsername(updates.username)
+      if (usernameError) {
+        return c.json({ status: 'error', message: usernameError }, 400)
       }
       const { count } = await supabase
         .from('users')

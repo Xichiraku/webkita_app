@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = "https://webkita-worker-api.anjo24696.workers.dev/api";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8787/api";
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -42,7 +42,7 @@ apiClient.interceptors.response.use(
     // lampirkan `.response` aslinya supaya extractErrorMessage() di
     // user_provider.js bisa membaca detail pesan dari backend.
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (import.meta.env.DEV) {
       // Log detail lengkap untuk debugging: cek tab Console browser saat
       // request gagal untuk melihat status code & body response asli.
       console.error('[API] Request failed:', {

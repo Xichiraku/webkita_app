@@ -1,133 +1,77 @@
-import React, { useState } from "react";
-import { LayoutDashboard, Package, Users, LogOut, ChevronRight, Menu, X, CreditCard,  Tag } from "lucide-react";
+import React from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { ArrowRight, CreditCard, LayoutDashboard, LogOut, Package, Tags, Users, X } from "lucide-react";
 
 const NAV = [
-  { id: "dashboard",    label: "Dashboard",   icon: LayoutDashboard },
-  { id: "orders",       label: "Orderan",      icon: Package          },
-  { id: "users",        label: "Pengguna",     icon: Users            },
-  { id: "transactions", label: "Transaksi",    icon: CreditCard       },
-  { id: "pricing",      label: "Paket Layanan", icon: Tag              },
+  { to: "/admin", end: true, label: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/orderan", label: "Orderan", icon: Package, count: "orders" },
+  { to: "/admin/pengguna", label: "Pengguna", icon: Users, count: "users" },
+  { to: "/admin/transaksi", label: "Transaksi", icon: CreditCard, count: "trx" },
+  { to: "/admin/paket", label: "Paket Layanan", icon: Tags },
 ];
 
-const AdminSidebar = ({ active, onChange, onLogout, orderCount, userCount, transactionCount }) => {
-  const [collapsed, setCollapsed] = useState(false);
-  const counts = { orders: orderCount, users: userCount, transactions: transactionCount };
+const AdminSidebar = ({ open, onClose, counts = {}, pending = 0, onLogout }) => {
+  const navigate = useNavigate();
 
   return (
     <>
-      <aside style={{
-        width: collapsed ? 64 : 220,
-        flexShrink: 0,
-        background: "#fff",
-        borderRight: "1px solid #F1F5F9",
-        display: "flex", flexDirection: "column",
-        height: "100vh", position: "sticky", top: 0,
-        transition: "width 0.2s ease",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          padding: "16px 12px",
-          borderBottom: "1px solid #F8FAFC",
-          display: "flex", alignItems: "center",
-          justifyContent: collapsed ? "center" : "space-between",
-          gap: 8,
-        }}>
-          {!collapsed && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-                background: "linear-gradient(135deg, #3B82F6, #6366F1)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <span style={{ color: "#fff", fontSize: 16, fontWeight: 800 }}>W</span>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: "#0F172A", lineHeight: 1 }}>Webkita</p>
-                <p style={{ margin: 0, fontSize: 10, color: "#94A3B8", fontWeight: 500 }}>Admin Panel</p>
-              </div>
-            </div>
-          )}
-          <button
-            onClick={() => setCollapsed(c => !c)}
-            style={{
-              width: 32, height: 32, borderRadius: 8,
-              border: "1px solid #E2E8F0", background: "#F8FAFC",
-              cursor: "pointer", display: "flex",
-              alignItems: "center", justifyContent: "center",
-              flexShrink: 0, color: "#64748B",
-            }}
-          >
-            {collapsed ? <Menu size={16} /> : <X size={16} />}
+      {/* overlay mobile */}
+      <div className={`fixed inset-0 z-40 bg-ink-950/50 backdrop-blur-sm lg:hidden ${open ? "" : "hidden"}`} aria-hidden="true" onClick={onClose} />
+
+      <aside
+        id="admin-sidebar"
+        aria-label="Menu admin"
+        className={`card fixed inset-y-0 left-0 z-50 flex w-64 flex-col rounded-r-3xl transition-transform duration-300 lg:inset-y-4 lg:left-4 lg:translate-x-0 lg:rounded-3xl ${open ? "translate-x-0" : "-translate-x-full"}`}
+      >
+        <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-6">
+          <button type="button" onClick={() => navigate("/admin")} className="flex items-center gap-3 rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-lg font-extrabold text-white shadow-soft">W</span>
+            <span className="leading-tight"><span className="block text-lg font-extrabold text-ink-900">Webkita</span><span className="block text-xs font-semibold text-ink-600">Admin Panel</span></span>
+          </button>
+          <button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl border border-ink-200 text-ink-700 transition hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 lg:hidden" aria-label="Tutup menu">
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
-        <nav style={{ flex: 1, padding: "12px 8px" }}>
-          {NAV.map(({ id, label, icon: Icon }) => {
-            const isActive = active === id;
-            const count    = counts[id];
-            return (
-              <button
-                key={id}
-                onClick={() => onChange(id)}
-                title={collapsed ? label : undefined}
-                style={{
-                  width: "100%", display: "flex", alignItems: "center",
-                  gap: collapsed ? 0 : 10,
-                  padding: collapsed ? "10px 0" : "9px 12px",
-                  justifyContent: collapsed ? "center" : "flex-start",
-                  borderRadius: 10, border: "none",
-                  cursor: "pointer", marginBottom: 2,
-                  background: isActive ? "#EFF6FF" : "transparent",
-                  color:      isActive ? "#2563EB" : "#64748B",
-                  textAlign: "left", transition: "all 0.15s",
-                }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#F8FAFC"; }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
-              >
-                <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
-                {!collapsed && (
-                  <>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: isActive ? 700 : 500 }}>
-                      {label}
+        <nav className="mt-3 flex-1 space-y-1.5 overflow-y-auto px-3" aria-label="Navigasi admin">
+          {NAV.map(({ to, end, label, icon: Icon, count }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 ${
+                  isActive
+                    ? "bg-brand-100 font-bold text-brand-800 shadow-[0_1px_0_#fff_inset,0_8px_16px_-10px_rgba(37,89,204,.5)]"
+                    : "font-semibold text-ink-700 hover:bg-brand-50 hover:text-ink-900"
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon className="h-[18px] w-[18px]" aria-hidden="true" /> {label}
+                  {count && counts[count] !== undefined && (
+                    <span className={`ml-auto grid min-w-[1.4rem] place-items-center rounded-full px-1.5 text-xs font-bold ${isActive ? "bg-white/80 text-brand-800" : "bg-ink-100 text-ink-700"}`}>
+                      {counts[count]}
                     </span>
-                    {count != null && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 700,
-                        padding: "2px 6px", borderRadius: 20,
-                        background: isActive ? "#DBEAFE" : "#F1F5F9",
-                        color:      isActive ? "#2563EB" : "#94A3B8",
-                      }}>
-                        {count}
-                      </span>
-                    )}
-                    {isActive && <ChevronRight size={13} />}
-                  </>
-                )}
-              </button>
-            );
-          })}
+                  )}
+                </>
+              )}
+            </NavLink>
+          ))}
         </nav>
 
-        <div style={{ padding: "12px 8px", borderTop: "1px solid #F8FAFC" }}>
-          <button
-            onClick={onLogout}
-            title={collapsed ? "Keluar" : undefined}
-            style={{
-              width: "100%", display: "flex", alignItems: "center",
-              gap: collapsed ? 0 : 10,
-              padding: collapsed ? "10px 0" : "9px 12px",
-              justifyContent: collapsed ? "center" : "flex-start",
-              borderRadius: 10, border: "none",
-              cursor: "pointer", background: "transparent", color: "#EF4444",
-              textAlign: "left", transition: "all 0.15s",
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = "#FEF2F2"}
-            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-          >
-            <LogOut size={16} />
-            {!collapsed && (
-              <span style={{ fontSize: 13, fontWeight: 500 }}>Keluar</span>
-            )}
+        <div className="space-y-3 p-3">
+          <div className="rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-4 text-white shadow-soft">
+            <p className="text-xs font-semibold text-brand-100">Perlu tindakan</p>
+            <p className="mt-1 text-3xl font-extrabold tabular-nums">{pending}</p>
+            <button type="button" onClick={() => { onClose?.(); navigate("/admin#aksi"); }} className="mt-2 inline-flex items-center gap-1 rounded text-sm font-bold text-white underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+              Lihat daftar <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+          <button type="button" onClick={onLogout} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-[#B91C1C] transition hover:bg-[#FEE2E2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#DC2626]">
+            <LogOut className="h-[18px] w-[18px]" aria-hidden="true" /> Keluar
           </button>
         </div>
       </aside>

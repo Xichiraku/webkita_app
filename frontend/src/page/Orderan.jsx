@@ -1,472 +1,327 @@
-import React, { useState, useEffect } from "react";
-import {
-  Package, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp,
-  Calendar, User, Phone, FileText, TrendingUp, RefreshCw, Layers, Tag, CreditCard,
-} from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  ArrowRight, Calendar, ChevronDown, CircleCheck, Clock, CreditCard, FileText, Info, Layers,
+  PackageOpen, Phone, Plus, RefreshCw, TrendingUp, User, XCircle,
+} from "lucide-react";
 import API from "../core/utils/api_client";
+import { ENDPOINTS } from "../core/constants/api_endpoint";
 import { usePayment } from "../provider/payment_provider";
 import { useUser } from "../provider/user_provider";
+import { OrderStatusChip } from "../components/ui/StatusChip";
+import CountUp from "../components/ui/CountUp";
+import Toast from "../components/ui/Toast";
+import PageLoader, { ButtonSpinner } from "../components/ui/Spinner";
+import useToast from "../hooks/useToast";
+import { formatDate, formatDateLong, rupiahOrNull } from "../utils/format";
+import { categoryLabel, ORDER_STATUS } from "../utils/status";
+import { BTN_PRIMARY, BTN_SECONDARY } from "../utils/ui";
+import { loadMidtrans, parseAmount } from "../utils/payment";
 
-const calculateProgress = (status) => {
-  const map = { pending: 10, process: 50, approved: 75, done: 100, rejected: 0 };
-  return map[status] ?? 0;
-};
+const FILTERS = ["all", "pending", "process", "approved", "rejected", "done"];
+const PLAN_DAYS = { Starter: 14, Professional: 30, Business: 60, Enterprise: 120 };
+const PROGRESS = { process: 50, done: 100 };
 
-const formatDate = (dateString) => {
-  if (!dateString) return "–";
-  return new Date(dateString).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-};
-
-const calculateEstimatedCompletion = (createdAt, planTitle) => {
+const estimate = (createdAt, planTitle) => {
   if (!createdAt) return "–";
-  const days = { Starter: 14, Professional: 30, Business: 60, Enterprise: 120 }[planTitle] || 30;
   const d = new Date(createdAt);
-  d.setDate(d.getDate() + days);
-  return formatDate(d.toISOString());
+  d.setDate(d.getDate() + (PLAN_DAYS[planTitle] || 30));
+  return formatDateLong(d.toISOString());
 };
 
-const formatRupiah = (value) => {
-  if (!value) return null;
-  const num = typeof value === "string" ? parseInt(value.replace(/\D/g, "")) : value;
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
-};
+const transform = (item) => ({
+  id: item.id,
+  projectTitle: item.project_title,
+  category: item.category,
+  description: item.description,
+  skills: item.skills,
+  contactName: item.contact_name,
+  contactPhone: item.contact_phone,
+  additionalNotes: item.additional_notes || "",
+  planTitle: item.plan_title,
+  estimateRange: item.price_range || "",
+  finalPriceRaw: item.plan_price_range || "",
+  rejectReason: item.reject_reason || "",
+  finalPrice: rupiahOrNull(parseAmount(item.plan_price_range)) || item.plan_price_range || "",
+  status: item.status || "pending",
+  createdAt: item.created_at,
+});
 
-const transformBackendData = (raw) => {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((item) => {
-    const status = item.status || "pending";
-    const planTitle = item.plan_title;
-    const createdAt = item.created_at;
-    return {
-      id: item.id,
-      userId: item.user_id,
-      projectTitle: item.project_title,
-      category: item.category,
-      description: item.description,
-      skills: item.skills,
-      contactName: item.contact_name,
-      contactPhone: item.contact_phone,
-      additionalNotes: item.additional_notes || "",
-      planTitle,
-      planPriceRange: formatRupiah(item.plan_price_range),
-      status,
-      progress: calculateProgress(status),
-      createdAt: formatDate(createdAt),
-      estimatedCompletion: calculateEstimatedCompletion(createdAt, planTitle),
-    };
-  });
-};
-
-const STATUS = {
-  pending: { label: "Menunggu", bg: "#FEF9C3", text: "#92400E", dot: "#F59E0B" },
-  process: { label: "Dalam Proses", bg: "#DBEAFE", text: "#1E40AF", dot: "#3B82F6" },
-  approved: { label: "Disetujui", bg: "#DCFCE7", text: "#166534", dot: "#22C55E" },
-  rejected: { label: "Ditolak", bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444" },
-  done: { label: "Selesai", bg: "#F3E8FF", text: "#6B21A8", dot: "#A855F7" },
-};
-
-const PLAN_COLORS = {
-  Starter: { from: "#3B82F6", to: "#1D4ED8" },
-  Professional: { from: "#8B5CF6", to: "#6D28D9" },
-  Business: { from: "#10B981", to: "#065F46" },
-  Enterprise: { from: "#F59E0B", to: "#B45309" },
-};
-
-const FILTER_ORDER = ["all", "pending", "process", "approved", "rejected", "done"];
-
-const parseAmount = (priceRange) => {
-  if (!priceRange) return 0;
-  const cleaned = priceRange.replace(/\./g, "").replace(/,/g, "");
-  const match = cleaned.match(/\d{4,}/);
-  return match ? parseInt(match[0]) : 0;
-};
-
-const loadMidtrans = () => {
-  return new Promise((resolve) => {
-    if (window.snap) return resolve();
-    const script = document.createElement("script");
-    script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
-    script.setAttribute("data-client-key", "SB-Mid-client-4Lymuq91xf7MtA6u");
-    script.onload = resolve;
-    document.body.appendChild(script);
-  });
-};
-
-const StatusBadge = ({ status }) => {
-  const cfg = STATUS[status] || STATUS.pending;
-  return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-      background: cfg.bg, color: cfg.text, whiteSpace: "nowrap",
-    }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
-      {cfg.label}
-    </span>
-  );
-};
-
-const ProgressBar = ({ value, status }) => {
-  const color = status === "done" ? "#22C55E" : status === "rejected" ? "#E5E7EB" : status === "approved" ? "#A855F7" : "#3B82F6";
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-        <span style={{ fontSize: 12, color: "#6B7280" }}>Progress</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color }}>{value}%</span>
-      </div>
-      <div style={{ height: 6, borderRadius: 99, background: "#E5E7EB", overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${value}%`, borderRadius: 99, background: color, transition: "width 0.6s ease" }} />
-      </div>
-    </div>
-  );
-};
-
-const StatCard = ({ icon: Icon, label, value, color }) => (
-  <div style={{
-    background: "#fff", borderRadius: 16, padding: "20px 24px",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.07)", borderLeft: `4px solid ${color}`,
-    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-  }}>
-    <div>
-      <p style={{ margin: 0, fontSize: 13, color: "#6B7280", marginBottom: 4 }}>{label}</p>
-      <p style={{ margin: 0, fontSize: 28, fontWeight: 700, color: "#111827" }}>{value}</p>
-    </div>
-    <div style={{ width: 44, height: 44, borderRadius: 12, background: `${color}18`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <Icon size={22} color={color} />
-    </div>
-  </div>
-);
+const STAT_CARDS = [
+  { key: "all", label: "Total Orderan", icon: Layers, border: "border-l-brand-600", tile: "bg-brand-100 text-brand-700" },
+  { key: "pending", label: "Menunggu", icon: Clock, border: "border-l-[#D97706]", tile: "bg-[#FEF3C7] text-[#B45309]" },
+  { key: "process", label: "Dalam Proses", icon: TrendingUp, border: "border-l-[#0E7490]", tile: "bg-[#CFFAFE] text-[#0E7490]" },
+  { key: "done", label: "Selesai", icon: CircleCheck, border: "border-l-[#15803D]", tile: "bg-[#DCFCE7] text-[#15803D]" },
+];
 
 const Field = ({ label, children }) => (
   <div>
-    <p style={{ margin: "0 0 3px", fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</p>
-    <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.6, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>{children}</p>
+    <p className="text-xs font-bold uppercase tracking-wide text-ink-600">{label}</p>
+    <p className="mt-1 whitespace-pre-line break-words leading-relaxed text-ink-900">{children}</p>
   </div>
 );
 
-const OrderCard = ({ order, isExpanded, onToggle, onPay, payLoading, isPaid }) => {
+function OrderCard({ order, index, open, onToggle, onPay, paying, isPaid }) {
   const navigate = useNavigate();
-  const planColor = PLAN_COLORS[order.planTitle] || { from: "#6B7280", to: "#374151" };
-  const canPay = order.planPriceRange && !["rejected", "done"].includes(order.status);
+  const pct = PROGRESS[order.status];
+  const canPay = !!order.finalPriceRaw && ["approved", "process"].includes(order.status);
+
+  let action = null;
+  if (isPaid) {
+    action = (
+      <button type="button" onClick={() => navigate(`/invoice/${order.id}`)} className={`px-4 py-2.5 text-sm ${BTN_SECONDARY}`}>
+        <FileText className="h-4 w-4" aria-hidden="true" /> Lihat Invoice
+      </button>
+    );
+  } else if (canPay) {
+    action = (
+      <button type="button" onClick={() => onPay(order)} disabled={paying} className={`px-4 py-2.5 text-sm ${BTN_PRIMARY}`}>
+        {paying ? <ButtonSpinner className="h-4 w-4" /> : <CreditCard className="h-4 w-4" aria-hidden="true" />}
+        {paying ? "Memproses…" : "Bayar Sekarang"}
+      </button>
+    );
+  } else if (order.status === "rejected") {
+    action = <button type="button" onClick={() => navigate("/harga")} className={`px-4 py-2.5 text-sm ${BTN_SECONDARY}`}>Ajukan Ulang</button>;
+  }
 
   return (
-    <div style={{
-      background: "#fff", borderRadius: 16,
-      boxShadow: isExpanded ? "0 8px 30px rgba(0,0,0,0.10)" : "0 1px 4px rgba(0,0,0,0.07)",
-      overflow: "hidden", transition: "box-shadow 0.25s ease",
-      border: isExpanded ? "1.5px solid #3B82F6" : "1.5px solid transparent",
-    }}>
-      <div onClick={onToggle} style={{ padding: "20px 24px", cursor: "pointer" }}>
-        {order.planTitle && (
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "4px 12px", borderRadius: 20, marginBottom: 14,
-            background: `linear-gradient(90deg, ${planColor.from}, ${planColor.to})`,
-            color: "#fff", fontSize: 12, fontWeight: 700, letterSpacing: 0.3,
-          }}>
-            <Tag size={11} /> Paket {order.planTitle}
-          </div>
-        )}
-
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#111827", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {order.projectTitle}
-            </h3>
-            <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>{order.category}</p>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <StatusBadge status={order.status} />
-            <div style={{ color: "#9CA3AF" }}>
-              {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </div>
-          </div>
+    <article
+      className={`card-in rounded-2xl border bg-white p-5 shadow-soft transition duration-300 hover:border-brand-300 hover:shadow-lift sm:p-6 ${open ? "border-brand-300" : "border-ink-200"}`}
+      style={{ "--d": `${index * 70}ms` }}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-bold tracking-wide text-ink-600">#{order.id}</p>
+          <h3 className="mt-0.5 break-words text-lg font-extrabold text-ink-900">{order.projectTitle}</h3>
+          <p className="mt-1 text-sm text-ink-600">{order.planTitle ? `Paket ${order.planTitle} · ` : ""}{formatDate(order.createdAt)}</p>
         </div>
-
-        <ProgressBar value={order.progress} status={order.status} />
-
-        <div style={{ display: "flex", gap: 20, marginTop: 14, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12, color: "#9CA3AF", display: "flex", alignItems: "center", gap: 5 }}>
-            <Calendar size={13} /> Dibuat: {order.createdAt}
-          </span>
-          <span style={{ fontSize: 12, color: "#9CA3AF", display: "flex", alignItems: "center", gap: 5 }}>
-            <Clock size={13} /> Target: {order.estimatedCompletion}
-          </span>
-        </div>
+        <OrderStatusChip status={order.status} />
       </div>
 
-      {isExpanded && (
-        <div style={{ borderTop: "1px solid #F3F4F6", background: "#F9FAFB", padding: "24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-            <div>
-              <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 700, color: "#374151", display: "flex", alignItems: "center", gap: 6 }}>
-                <FileText size={15} color="#3B82F6" /> Detail Proyek
-              </h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <Field label="Deskripsi">{order.description}</Field>
-                <Field label="Skill Dibutuhkan">{order.skills}</Field>
-                {order.additionalNotes && <Field label="Catatan Tambahan">{order.additionalNotes}</Field>}
-              </div>
-            </div>
-
-            <div>
-              <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 700, color: "#374151", display: "flex", alignItems: "center", gap: 6 }}>
-                <User size={15} color="#3B82F6" /> Informasi Kontak
-              </h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <Field label="Nama Kontak">
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}><User size={13} color="#6B7280" /> {order.contactName}</span>
-                </Field>
-                <Field label="Nomor Telepon">
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Phone size={13} color="#6B7280" /> {order.contactPhone}</span>
-                </Field>
-              </div>
-
-              <div style={{
-                marginTop: 20, padding: "14px 16px",
-                background: canPay ? "#EFF6FF" : "#F8FAFC",
-                borderRadius: 12,
-                border: `1px solid ${canPay ? "#BFDBFE" : "#E2E8F0"}`,
-              }}>
-                <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 600, color: canPay ? "#3B82F6" : "#94A3B8", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  {canPay ? "Harga yang Ditetapkan Admin" : "Menunggu Penetapan Harga"}
-                </p>
-                <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: canPay ? "#1D4ED8" : "#94A3B8" }}>
-                  {order.planPriceRange || "Admin belum menetapkan harga"}
-                </p>
-              </div>
-
-              {canPay && (
-                isPaid ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
-                    {/* Status Lunas */}
-                    <div style={{
-                      width: "100%", padding: "13px", borderRadius: 12,
-                      background: "#DCFCE7", border: "1px solid #86EFAC",
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                    }}>
-                      <CheckCircle size={16} color="#16A34A" />
-                      <span style={{ fontSize: 14, fontWeight: 700, color: "#16A34A" }}>Pembayaran Lunas</span>
-                    </div>
-
-                    {/* Tombol Invoice */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); navigate(`/invoice/${order.id}`); }}
-                      style={{
-                        width: "100%", padding: "13px", borderRadius: 12,
-                        border: "1px solid #BFDBFE", background: "#EFF6FF",
-                        color: "#1D4ED8", fontSize: 14, fontWeight: 700,
-                        cursor: "pointer", display: "flex", alignItems: "center",
-                        justifyContent: "center", gap: 8,
-                      }}
-                    >
-                      <FileText size={15} /> Lihat Invoice
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onPay(order); }}
-                    disabled={payLoading}
-                    style={{
-                      marginTop: 14, width: "100%", padding: "13px",
-                      borderRadius: 12, border: "none",
-                      background: payLoading ? "#94A3B8" : "linear-gradient(90deg, #3B82F6, #6366F1)",
-                      color: "#fff", fontSize: 14, fontWeight: 700,
-                      cursor: payLoading ? "not-allowed" : "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                      transition: "opacity 0.2s",
-                    }}
-                  >
-                    <CreditCard size={16} />
-                    {payLoading ? "Memproses..." : `Bayar Sekarang — ${order.planPriceRange}`}
-                  </button>
-                )
-              )}
-            </div>
+      {pct !== undefined && (
+        <div className="mt-4">
+          <div className="mb-1.5 flex items-center justify-between text-sm">
+            <span className="font-semibold text-ink-600">Progress</span>
+            <span className="font-extrabold text-ink-900">{pct}%</span>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress ${order.projectTitle}`}>
+            <div className={`bar-grow h-full rounded-full ${order.status === "done" ? "bg-[#15803D]" : "bg-gradient-to-r from-brand-600 to-brand-400"}`} style={{ width: `${pct}%` }} />
           </div>
         </div>
       )}
-    </div>
+
+      {order.status === "approved" && !isPaid && (
+        <p className="mt-3 flex items-center gap-2 text-sm text-ink-600">
+          <Info className="h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
+          {canPay ? "Orderan disetujui. Selesaikan pembayaran agar proyek dapat segera dikerjakan." : "Orderan disetujui. Admin sedang menetapkan harga final proyek Anda."}
+        </p>
+      )}
+      {order.status === "rejected" && (
+        <p className="mt-3 rounded-xl bg-[#FEE2E2] p-3 text-sm text-[#991B1B]">
+          <strong>Alasan penolakan:</strong> {order.rejectReason || "Admin tidak mencantumkan alasan. Hubungi kami lewat WhatsApp untuk informasi lebih lanjut."}
+        </p>
+      )}
+      {isPaid && (
+        <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#DCFCE7] px-3 py-1 text-xs font-bold text-[#15803D]">
+          <CircleCheck className="h-3.5 w-3.5" aria-hidden="true" /> Pembayaran Lunas
+        </p>
+      )}
+
+      {open && (
+        <div className="step-in mt-5 grid gap-5 rounded-2xl bg-ink-50 p-5 text-sm sm:grid-cols-2">
+          <div className="space-y-4">
+            <h4 className="flex items-center gap-2 font-extrabold text-ink-900"><FileText className="h-4 w-4 text-brand-600" aria-hidden="true" /> Detail Proyek</h4>
+            <Field label="Kategori">{categoryLabel(order.category)}</Field>
+            <Field label="Deskripsi">{order.description}</Field>
+            <Field label="Skill Dibutuhkan">{order.skills}</Field>
+            {order.additionalNotes && <Field label="Catatan Tambahan">{order.additionalNotes}</Field>}
+          </div>
+          <div className="space-y-4">
+            <h4 className="flex items-center gap-2 font-extrabold text-ink-900"><User className="h-4 w-4 text-brand-600" aria-hidden="true" /> Informasi Kontak</h4>
+            <Field label="Nama Kontak">{order.contactName}</Field>
+            <Field label="Nomor Telepon"><span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-ink-500" aria-hidden="true" />{order.contactPhone}</span></Field>
+            <Field label="Target Selesai"><span className="inline-flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-ink-500" aria-hidden="true" />{estimate(order.createdAt, order.planTitle)}</span></Field>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-5 flex flex-col gap-3 border-t border-ink-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold text-ink-600">{order.finalPriceRaw ? "Harga final dari admin" : "Estimasi biaya"}</p>
+          <p className="font-extrabold text-ink-900">{order.finalPrice || order.estimateRange || "Menunggu penetapan harga"}</p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button type="button" onClick={onToggle} aria-expanded={open} className={`px-4 py-2.5 text-sm ${BTN_SECONDARY}`}>
+            {open ? "Tutup Detail" : "Lihat Detail"}
+            <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+          </button>
+          {action}
+        </div>
+      </div>
+    </article>
   );
-};
+}
 
-// ─── main component ───────────────────────────────────────────────────────────
-
-const OrderDashboard = () => {
-  const [orders, setOrders] = useState([]);
-  const [expandedOrder, setExpandedOrder] = useState(null);
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [payLoading, setPayLoading] = useState(false);
-  const [paidProjects, setPaidProjects] = useState({});
-
-  const { createTransaction, openSnapPayment } = usePayment();
+export default function Orderan() {
+  const navigate = useNavigate();
   const { user } = useUser();
+  const { createTransaction, openSnapPayment } = usePayment();
+  const [toast, showToast] = useToast();
 
-  const fetchPaymentStatuses = async (orderList) => {
-    const results = {};
-    await Promise.all(
-      orderList.map(async (order) => {
-        try {
-          const res = await API.get(`/payment/project/${order.id}`);
-          results[order.id] = res?.isPaid === true;
-        } catch {
-          results[order.id] = false;
-        }
-      })
-    );
-    setPaidProjects(results);
-  };
+  const [orders, setOrders] = useState([]);
+  const [paid, setPaid] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState("all");
+  const [openId, setOpenId] = useState(null);
+  const [payingId, setPayingId] = useState(null);
 
-  const fetchOrders = async () => {
-    setIsLoading(true);
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
     setError(null);
     try {
-      const data = await API.get("/project/my");
-      const transformed = transformBackendData(data.data || data);
-      setOrders(transformed);
-      await fetchPaymentStatuses(transformed);
+      const data = await API.get(ENDPOINTS.GET_MY_PROJECTS);
+      const list = (Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []).map(transform);
+      setOrders(list);
+      const res = {};
+      await Promise.all(list.map(async (o) => {
+        try { res[o.id] = (await API.get(`/payment/project/${o.id}`))?.isPaid === true; } catch { res[o.id] = false; }
+      }));
+      setPaid(res);
     } catch (err) {
       setError(err?.message || "Terjadi kesalahan saat memuat data.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  const count = useCallback((s) => (s === "all" ? orders.length : orders.filter((o) => o.status === s).length), [orders]);
+  const rows = useMemo(() => (filter === "all" ? orders : orders.filter((o) => o.status === filter)), [orders, filter]);
 
   const handlePay = async (order) => {
-    if (!user?.email) {
-      alert("Email akun tidak ditemukan. Silakan lengkapi profil Anda terlebih dahulu.");
-      return;
-    }
+    if (!user?.email) { showToast("Email akun tidak ditemukan. Lengkapi profil Anda terlebih dahulu.", "err"); return; }
+    const amount = parseAmount(order.finalPriceRaw);
+    if (!amount) { showToast("Harga tidak valid. Silakan hubungi admin.", "err"); return; }
 
-    const amount = parseAmount(order.planPriceRange);
-    if (!amount || amount <= 0) {
-      alert("Harga tidak valid. Silakan hubungi admin.");
-      return;
-    }
-
-    setPayLoading(true);
+    setPayingId(order.id);
     try {
       await loadMidtrans();
-
       const result = await createTransaction(order.id, {
         amount,
         customerName: order.contactName,
         customerEmail: user.email,
         customerPhone: order.contactPhone,
       });
-
-      if (!result.success) {
-        alert(result.message || "Gagal membuat transaksi");
-        return;
-      }
-
+      if (!result.success) { showToast(result.message || "Gagal membuat transaksi", "err"); return; }
       openSnapPayment(
         result.data.snap_token,
-        () => {
-          alert("Pembayaran berhasil! Tim kami akan segera menghubungi Anda.");
-          fetchOrders();
-        },
-        () => { alert("Pembayaran pending. Silakan selesaikan pembayaran Anda."); },
-        () => { alert("Pembayaran gagal. Silakan coba lagi."); },
+        () => { showToast("Pembayaran berhasil! Tim kami akan segera menghubungi Anda."); fetchOrders(); },
+        () => showToast("Pembayaran pending. Silakan selesaikan pembayaran Anda."),
+        () => showToast("Pembayaran gagal. Silakan coba lagi.", "err"),
       );
-    } catch (err) {
-      alert("Terjadi kesalahan saat memproses pembayaran");
+    } catch {
+      showToast("Terjadi kesalahan saat memproses pembayaran", "err");
     } finally {
-      setPayLoading(false);
+      setPayingId(null);
     }
   };
 
-  const filteredOrders = filterStatus === "all" ? orders : orders.filter((o) => o.status === filterStatus);
-
-  const stats = {
-    total: orders.length,
-    pending: orders.filter((o) => o.status === "pending").length,
-    process: orders.filter((o) => o.status === "process").length,
-    done: orders.filter((o) => o.status === "done").length,
-  };
-
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-        <div style={{ width: 44, height: 44, border: "3px solid #E5E7EB", borderTop: "3px solid #3B82F6", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <p style={{ color: "#6B7280", fontSize: 14, margin: 0 }}>Memuat data orderan…</p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ background: "#fff", borderRadius: 20, padding: "40px 32px", textAlign: "center", maxWidth: 380, width: "100%", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-          <XCircle size={48} color="#EF4444" style={{ marginBottom: 16 }} />
-          <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "#111827" }}>Gagal Memuat Data</h2>
-          <p style={{ margin: "0 0 24px", color: "#6B7280", fontSize: 14 }}>{error}</p>
-          <button onClick={fetchOrders} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", borderRadius: 10, border: "none", cursor: "pointer", background: "#3B82F6", color: "#fff", fontWeight: 600, fontSize: 14 }}>
-            <RefreshCw size={15} /> Coba Lagi
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="bg-ink-50"><PageLoader label="Memuat data orderan…" /></div>;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F3F4F6", padding: "32px 16px" }}>
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
+    <main className="relative overflow-hidden bg-ink-50">
+      <div className="pointer-events-none absolute -left-24 top-0 h-72 w-72 animate-blob rounded-full bg-brand-100 opacity-70 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute -right-24 top-64 h-72 w-72 animate-blob rounded-full bg-brand-200/50 blur-3xl" style={{ animationDelay: "-7s" }} aria-hidden="true" />
 
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "#111827" }}>Orderan Saya</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6B7280" }}>Pantau status dan progress semua proyek Anda</p>
+      <div className="relative mx-auto max-w-5xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
+        <div className="flex animate-rise flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">Orderan Saya</h1>
+            <p className="mt-1.5 text-ink-600">Pantau status dan progress semua proyek Anda.</p>
+          </div>
+          <button type="button" onClick={() => navigate("/harga")} className={`self-start px-5 py-3 text-sm ${BTN_PRIMARY}`}>
+            <Plus className="h-4 w-4" aria-hidden="true" /> Buat Orderan Baru
+          </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 28 }}>
-          <StatCard icon={Layers} label="Total Orderan" value={stats.total} color="#3B82F6" />
-          <StatCard icon={Clock} label="Menunggu" value={stats.pending} color="#F59E0B" />
-          <StatCard icon={TrendingUp} label="Dalam Proses" value={stats.process} color="#6366F1" />
-          <StatCard icon={CheckCircle} label="Selesai" value={stats.done} color="#22C55E" />
-        </div>
+        {error ? (
+          <div className="mx-auto mt-10 max-w-md rounded-3xl border border-ink-200 bg-white px-8 py-10 text-center shadow-soft">
+            <XCircle className="mx-auto h-12 w-12 text-[#DC2626]" aria-hidden="true" />
+            <h2 className="mt-4 text-xl font-extrabold">Gagal Memuat Data</h2>
+            <p className="mt-1.5 text-sm text-ink-600">{error}</p>
+            <button type="button" onClick={fetchOrders} className={`mt-6 px-5 py-2.5 text-sm ${BTN_PRIMARY}`}><RefreshCw className="h-4 w-4" aria-hidden="true" /> Coba Lagi</button>
+          </div>
+        ) : (
+          <>
+            {/* Ringkasan */}
+            <section aria-label="Ringkasan orderan" className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {STAT_CARDS.map(({ key, label, icon: Icon, border, tile }, i) => (
+                <div key={key} className={`animate-rise rounded-2xl border border-l-4 border-ink-200 bg-white p-5 shadow-soft ${border}`} style={{ animationDelay: `${60 * (i + 1)}ms` }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-semibold text-ink-600">{label}</p>
+                    <span className={`grid h-10 w-10 place-items-center rounded-xl ${tile}`}><Icon className="h-5 w-5" aria-hidden="true" /></span>
+                  </div>
+                  <p className="mt-2 text-3xl font-extrabold tabular-nums text-ink-900"><CountUp to={count(key)} /></p>
+                </div>
+              ))}
+            </section>
 
-        <div style={{ background: "#fff", borderRadius: 12, padding: "10px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {FILTER_ORDER.map((s) => {
-            const active = filterStatus === s;
-            return (
-              <button key={s} onClick={() => setFilterStatus(s)} style={{ padding: "6px 16px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: active ? 700 : 500, background: active ? "#3B82F6" : "#F3F4F6", color: active ? "#fff" : "#374151", transition: "all 0.15s" }}>
-                {s === "all" ? "Semua" : STATUS[s]?.label || s}
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {filteredOrders.length === 0 ? (
-            <div style={{ background: "#fff", borderRadius: 16, padding: "64px 24px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <Package size={48} color="#D1D5DB" style={{ marginBottom: 16 }} />
-              <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#6B7280" }}>Belum ada orderan</p>
-              <p style={{ margin: "6px 0 0", fontSize: 13, color: "#9CA3AF" }}>Orderan Anda akan muncul di sini</p>
+            {/* Filter status */}
+            <div className="no-scrollbar -mx-5 mt-8 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+              <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="group" aria-label="Filter status orderan">
+                {FILTERS.map((f) => {
+                  const on = f === filter;
+                  return (
+                    <button
+                      key={f}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setFilter(f)}
+                      className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 ${on ? "border-brand-600 bg-brand-600 text-white shadow-soft" : "border-ink-200 bg-white text-ink-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"}`}
+                    >
+                      {f === "all" ? "Semua" : ORDER_STATUS[f].label}
+                      <span className={`grid min-w-[1.4rem] place-items-center rounded-full px-1.5 text-xs font-bold ${on ? "bg-white/20 text-white" : "bg-ink-100 text-ink-700"}`}>{count(f)}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          ) : (
-            filteredOrders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                isExpanded={expandedOrder === order.id}
-                onToggle={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-                onPay={handlePay}
-                payLoading={payLoading}
-                isPaid={paidProjects[order.id] === true}
-              />
-            ))
-          )}
-        </div>
 
+            {/* Daftar orderan */}
+            <p className="sr-only" role="status" aria-live="polite">Menampilkan {rows.length} orderan{filter === "all" ? "" : ` berstatus ${ORDER_STATUS[filter].label}`}</p>
+            <div className="mt-5 space-y-4">
+              {rows.length === 0 ? (
+                <div className="card-in rounded-2xl border border-ink-200 bg-white px-6 py-14 text-center shadow-soft">
+                  <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-50 text-brand-600"><PackageOpen className="h-8 w-8" aria-hidden="true" /></span>
+                  <h3 className="mt-5 text-lg font-extrabold text-ink-900">{filter === "all" ? "Belum ada orderan" : `Tidak ada orderan berstatus ${ORDER_STATUS[filter].label}`}</h3>
+                  <p className="mx-auto mt-1.5 max-w-sm text-ink-600">{filter === "all" ? "Orderan Anda akan muncul di sini setelah Anda memesan paket." : "Coba pilih status lain untuk melihat orderan Anda."}</p>
+                  {filter === "all" ? (
+                    <button type="button" onClick={() => navigate("/harga")} className={`mt-6 px-5 py-3 text-sm ${BTN_PRIMARY}`}>Pilih Paket <ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
+                  ) : (
+                    <button type="button" onClick={() => setFilter("all")} className={`mt-6 px-5 py-2.5 text-sm ${BTN_SECONDARY}`}>Lihat Semua Orderan</button>
+                  )}
+                </div>
+              ) : (
+                rows.map((o, i) => (
+                  <OrderCard
+                    key={`${filter}-${o.id}`}
+                    order={o}
+                    index={i}
+                    open={openId === o.id}
+                    onToggle={() => setOpenId(openId === o.id ? null : o.id)}
+                    onPay={handlePay}
+                    paying={payingId === o.id}
+                    isPaid={paid[o.id] === true}
+                  />
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
-    </div>
+      <Toast toast={toast} />
+    </main>
   );
-};
-
-export default OrderDashboard;
+}

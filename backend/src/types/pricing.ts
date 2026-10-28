@@ -5,7 +5,8 @@ export interface PricingPlan {
   title: string;
   tier: Tier;
   min_price: number;
-  max_price: number;
+  /** null = paket tanpa batas atas (ditampilkan "Mulai Rp …") */
+  max_price: number | null;
   price_range: string;
   timeline?: string;
   badge?: string;
@@ -37,7 +38,7 @@ export interface CreatePricingPlanBody {
   title: string;
   tier: Tier;
   min_price: number;
-  max_price: number;
+  max_price: number | null;
   price_range: string;
   timeline?: string;
   badge?: string;

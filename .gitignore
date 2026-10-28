@@ -1,0 +1,39 @@
+# Dependencies
+**/node_modules/
+
+# Build output and tooling caches
+**/dist/
+**/dist-ssr/
+**/build/
+**/.vite/
+**/.wrangler/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+backend/.dev.vars
+backend/.dev.vars.*
+!backend/.dev.vars.example
+
+# Local Supabase state
+supabase/.temp/
+supabase/.branches/
+
+# Logs and test artifacts
+*.log
+coverage/
+playwright-report/
+test-results/
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/*.code-snippets

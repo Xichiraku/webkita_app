@@ -14,7 +14,7 @@ const mapResponseToUser = (r) => ({
   isAktif: r?.is_aktif,
   isEmailVerified: r?.is_email_verified,
   subscribeNewsletter: r?.subscribe_newsletter,
-  createdAt: r?.createdAt,
+  createdAt: r?.created_at ?? r?.createdAt,
 });
 
 // Ekstraksi pesan error dari berbagai kemungkinan bentuk response backend.

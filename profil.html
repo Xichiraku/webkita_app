@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profil Pengguna – Webkita</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS (CDN, untuk prototipe. Untuk produksi Laravel: pakai Tailwind via Vite) -->
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '"Segoe UI"', 'Roboto', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#EFF5FF', 100: '#DCE8FD', 200: '#BFD5FB', 300: '#93B8F7', 400: '#5F94F0', 500: '#3B73E6', 600: '#2559CC', 700: '#1D46A5', 800: '#1B3A82', 900: '#1A3068', 950: '#111F45' },
+            ink: { 50: '#F4F7FB', 100: '#EAF0F7', 200: '#D9E2EE', 300: '#BFCBDC', 400: '#8E9DB5', 500: '#66758F', 600: '#4B5A73', 700: '#36445A', 800: '#232F42', 900: '#152033', 950: '#0C1524' },
+          },
+          boxShadow: {
+            soft: '0 10px 30px -12px rgba(26, 48, 104, 0.18), 0 2px 6px rgba(26, 48, 104, 0.06)',
+            lift: '0 22px 40px -18px rgba(26, 48, 104, 0.30), 0 4px 10px rgba(26, 48, 104, 0.06)',
+          },
+          keyframes: {
+            blob: { '0%,100%': { transform: 'translate(0,0) scale(1)' }, '50%': { transform: 'translate(20px,-16px) scale(1.08)' } },
+            rise: { from: { opacity: '0', transform: 'translateY(14px)' }, to: { opacity: '1', transform: 'none' } },
+            pop: { '0%': { transform: 'scale(.6)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
+          },
+          animation: {
+            blob: 'blob 14s ease-in-out infinite',
+            rise: 'rise .45s cubic-bezier(.22,1,.36,1) both',
+            pop: 'pop .35s cubic-bezier(.34,1.56,.64,1) both',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    @keyframes menuIn { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+    .menu-in { animation: menuIn .18s cubic-bezier(.22,1,.36,1) both; transform-origin: top right; }
+    
+    .step-in { animation: rise .45s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes shake2 { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    .shake { animation: shake2 .35s ease-in-out; }
+    @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 16px) scale(.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+    .toast-in { animation: toastIn .35s cubic-bezier(.34,1.56,.64,1) both; }
+
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-brand-50 to-ink-50 font-sans text-ink-900 antialiased selection:bg-brand-200">
+  <a href="#utama" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-white">Lewati ke konten utama</a>
+
+  <header id="navbar" class="sticky top-0 z-50 border-b border-transparent bg-white/85 backdrop-blur transition-shadow duration-300">
+    <div class="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
+      <a href="beranda.html" class="flex items-center gap-2 rounded-md text-xl font-extrabold tracking-tight text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400">
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white"><i data-lucide="code-xml" class="h-[18px] w-[18px]"></i></span>
+        Webkita
+      </a>
+
+      <div class="flex items-center gap-1">
+        <nav class="hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
+        <a href="beranda.html" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Beranda</a>
+        <a href="beranda.html#cara-kerja" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Cara Kerja</a>
+        <a href="orderan.html" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Orderan</a>
+        <a href="harga.html" class="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400">Harga</a>
+        </nav>
+
+        <!-- Menu akun -->
+        <div id="user-wrap" class="relative ml-2">
+          <button id="user-btn" type="button" class="grid h-10 w-10 place-items-center rounded-full bg-brand-600 text-white shadow-sm transition hover:bg-brand-700 hover:shadow-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400" aria-haspopup="menu" aria-expanded="false" aria-controls="user-menu" aria-label="Menu akun">
+            <i data-lucide="user" class="h-5 w-5"></i>
+          </button>
+          <div id="user-menu" role="menu" aria-label="Akun" class="menu-in absolute right-0 top-[calc(100%+12px)] hidden w-64 rounded-2xl border border-ink-200 bg-white p-1.5 shadow-lift">
+            <div class="px-3.5 py-3">
+              <p class="font-bold text-ink-900">Demo</p>
+              <p class="text-xs text-ink-600">demo@webkita.local</p>
+            </div>
+            <div class="my-1 h-px bg-ink-200" role="separator"></div>
+            <a role="menuitem" href="profil.html" class="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-ink-800 transition hover:bg-brand-50 focus-visible:bg-brand-50 focus-visible:outline-none"><i data-lucide="user" class="h-4 w-4"></i> Profil</a>
+            <!-- Laravel: logout harus POST. Ganti dengan <form method="POST" action="{{ route('logout') }}">@csrf <button ...> -->
+            <a role="menuitem" href="login.html" class="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#B91C1C] transition hover:bg-[#FEE2E2] focus-visible:bg-[#FEE2E2] focus-visible:outline-none"><i data-lucide="log-out" class="h-4 w-4"></i> Keluar</a>
+          </div>
+        </div>
+
+        <button id="menu-btn" type="button" class="ml-1 grid h-11 w-11 place-items-center rounded-xl text-ink-800 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400 md:hidden" aria-controls="mobile-menu" aria-expanded="false" aria-label="Buka menu">
+          <i data-lucide="menu" class="h-6 w-6"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="hidden border-t border-ink-200 bg-white md:hidden">
+      <nav class="mx-auto flex max-w-7xl flex-col gap-1 px-5 py-4" aria-label="Navigasi seluler">
+        <a href="beranda.html" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Beranda</a>
+        <a href="beranda.html#cara-kerja" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Cara Kerja</a>
+        <a href="orderan.html" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Orderan</a>
+        <a href="harga.html" class="rounded-lg px-3 py-3 font-semibold text-ink-800 hover:bg-brand-50">Harga</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="utama" class="relative overflow-hidden">
+    <div class="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-brand-100 opacity-70 blur-3xl animate-blob" aria-hidden="true"></div>
+    <div class="pointer-events-none absolute -right-24 top-96 h-72 w-72 rounded-full bg-brand-200/50 blur-3xl animate-blob" style="animation-delay:-7s" aria-hidden="true"></div>
+
+    <div class="relative mx-auto max-w-3xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
+      <div class="animate-rise">
+        <h1 class="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">Profil Pengguna</h1>
+        <p class="mt-1.5 text-ink-600">Kelola informasi akun Anda.</p>
+      </div>
+
+      <!-- ===== Kartu identitas ===== -->
+      <section aria-label="Identitas akun" class="animate-rise mt-8 overflow-hidden rounded-3xl border border-ink-200 bg-white shadow-lift" style="animation-delay:80ms">
+        <div class="relative h-32 bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 sm:h-36">
+          <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" aria-hidden="true"></div>
+          <div class="absolute bottom-0 left-1/3 h-24 w-24 rounded-full bg-brand-400/20 blur-2xl" aria-hidden="true"></div>
+        </div>
+        <div class="px-6 pb-7 sm:px-8">
+          <div class="-mt-14 flex flex-col gap-4 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
+              <span class="relative z-10 grid h-28 w-28 shrink-0 place-items-center rounded-full border-4 border-white bg-white text-brand-600 shadow-lift sm:h-32 sm:w-32"><i data-lucide="user" class="h-14 w-14 sm:h-16 sm:w-16" stroke-width="1.75"></i></span>
+              <div class="pb-1">
+                <h2 id="hdr-name" class="text-2xl font-extrabold tracking-tight text-ink-900"></h2>
+                <p id="hdr-user" class="text-ink-600"></p>
+              </div>
+            </div>
+            <button type="button" id="btn-edit" class="group inline-flex items-center justify-center gap-2 self-start rounded-xl bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-lift focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 sm:self-end">
+              <i data-lucide="square-pen" class="h-4 w-4"></i> Edit Profil
+            </button>
+          </div>
+          <ul class="mt-5 flex flex-wrap gap-2" aria-label="Status akun">
+            <li class="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1 text-xs font-bold text-brand-800"><i data-lucide="shield" class="h-3.5 w-3.5"></i> Pembeli</li>
+            <li class="inline-flex items-center gap-1.5 rounded-full bg-[#DCFCE7] px-3 py-1 text-xs font-bold text-[#15803D]"><i data-lucide="circle-check" class="h-3.5 w-3.5"></i> Aktif</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ===== Informasi detail ===== -->
+      <!-- Laravel: action="{{ route('profile.update') }}" method="post" + @csrf + @method('PATCH') -->
+      <form id="profile-form" action="#" method="post" novalidate data-editing="false" class="group animate-rise mt-6 rounded-3xl border border-ink-200 bg-white p-6 shadow-soft sm:p-8" style="animation-delay:140ms" aria-labelledby="detail-title">
+        <h2 id="detail-title" class="flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-ink-900">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-100 text-brand-700"><i data-lucide="user" class="h-5 w-5"></i></span> Informasi Detail
+        </h2>
+
+        <div class="mt-7 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          
+          <div>
+            <label for="f-username" class="block text-xs font-bold uppercase tracking-wide text-ink-600">Username</label>
+            <p class="mt-1.5 flex min-h-[2.5rem] items-center gap-2.5 text-[17px] text-ink-900 group-data-[editing=true]:hidden"><i data-lucide="at-sign" class="h-[18px] w-[18px] shrink-0 text-ink-500"></i><span data-view="username"></span></p>
+            <div class="mt-1.5 hidden group-data-[editing=true]:block">
+              <input id="f-username" name="username" type="text" placeholder="Contoh: budisudono" autocomplete="username" aria-describedby="f-username-err f-username-hint" class="h-12 w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]" />
+              <p id="f-username-hint" class="mt-1.5 text-sm text-ink-600">3-30 karakter: huruf, angka, titik, atau garis bawah.</p><p id="f-username-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+            </div>
+          </div>
+          
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wide text-ink-600">Email</p>
+            <p class="mt-1.5 flex min-h-[2.5rem] items-center gap-2.5 text-[17px] text-ink-900"><i data-lucide="mail" class="h-[18px] w-[18px] shrink-0 text-ink-500"></i><span data-view="email"></span></p>
+            <p class="mt-1 hidden text-sm text-ink-600 group-data-[editing=true]:block">Email tidak dapat diubah dari sini.</p>
+          </div>
+          
+          <div>
+            <label for="f-first_name" class="block text-xs font-bold uppercase tracking-wide text-ink-600">Nama Depan</label>
+            <p class="mt-1.5 flex min-h-[2.5rem] items-center gap-2.5 text-[17px] text-ink-900 group-data-[editing=true]:hidden"><span data-view="first_name"></span></p>
+            <div class="mt-1.5 hidden group-data-[editing=true]:block">
+              <input id="f-first_name" name="first_name" type="text" placeholder="Nama depan" autocomplete="given-name" aria-describedby="f-first_name-err" class="h-12 w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]" />
+              <p id="f-first_name-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+            </div>
+          </div>
+          
+          <div>
+            <label for="f-last_name" class="block text-xs font-bold uppercase tracking-wide text-ink-600">Nama Belakang</label>
+            <p class="mt-1.5 flex min-h-[2.5rem] items-center gap-2.5 text-[17px] text-ink-900 group-data-[editing=true]:hidden"><span data-view="last_name"></span></p>
+            <div class="mt-1.5 hidden group-data-[editing=true]:block">
+              <input id="f-last_name" name="last_name" type="text" placeholder="Nama belakang" autocomplete="family-name" aria-describedby="f-last_name-err" class="h-12 w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]" />
+              <p id="f-last_name-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+            </div>
+          </div>
+          
+          <div>
+            <label for="f-phone" class="block text-xs font-bold uppercase tracking-wide text-ink-600">Nomor Telepon</label>
+            <p class="mt-1.5 flex min-h-[2.5rem] items-center gap-2.5 text-[17px] text-ink-900 group-data-[editing=true]:hidden"><i data-lucide="phone" class="h-[18px] w-[18px] shrink-0 text-ink-500"></i><span data-view="phone"></span></p>
+            <div class="mt-1.5 hidden group-data-[editing=true]:block">
+              <input id="f-phone" name="phone" type="tel" placeholder="08123456789" autocomplete="tel" aria-describedby="f-phone-err" class="h-12 w-full rounded-xl border border-ink-300 bg-white px-4 text-[15px] text-ink-900 placeholder:text-ink-500 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-300 aria-[invalid=true]:border-[#DC2626] aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-[#FEE2E2]" />
+              <p id="f-phone-err" class="mt-1.5 hidden items-center gap-1.5 text-sm font-semibold text-[#B91C1C]" role="alert"><i data-lucide="circle-alert" class="h-4 w-4 shrink-0"></i><span></span></p>
+            </div>
+          </div>
+          
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wide text-ink-600">Tanggal Bergabung</p>
+            <p class="mt-1.5 flex min-h-[2.5rem] items-center gap-2.5 text-[17px] text-ink-900"><i data-lucide="calendar" class="h-[18px] w-[18px] shrink-0 text-ink-500"></i><span data-view="joined"></span></p>
+            
+          </div>
+        </div>
+
+        <label class="mt-6 flex items-start gap-3 rounded-2xl bg-ink-50 p-4 has-[:disabled]:cursor-default group-data-[editing=true]:cursor-pointer">
+          <input id="f-newsletter" name="newsletter" type="checkbox" disabled class="mt-1 h-5 w-5 shrink-0 rounded border-ink-400 text-brand-600 focus:ring-brand-300 disabled:opacity-100" />
+          <span><span class="flex items-center gap-2 font-bold text-ink-900"><i data-lucide="bell" class="h-4 w-4 text-ink-600"></i> Subscribe Newsletter</span>
+          <span class="mt-0.5 block text-sm text-ink-600">Terima update dan informasi terbaru via email.</span></span>
+        </label>
+
+        <div class="mt-7 hidden flex-col gap-3 border-t border-ink-200 pt-6 group-data-[editing=true]:flex sm:flex-row">
+          <button type="submit" id="btn-save" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3 font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-lift focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 disabled:cursor-wait disabled:opacity-80 disabled:hover:translate-y-0">
+            <svg id="spinner" class="hidden h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".3" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+            <i id="save-icon" data-lucide="save" class="h-4 w-4"></i><span id="save-label">Simpan Perubahan</span>
+          </button>
+          <button type="button" id="btn-cancel" class="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-ink-200 bg-white px-6 py-3 font-bold text-ink-800 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">
+            <i data-lucide="x" class="h-4 w-4"></i> Batal
+          </button>
+        </div>
+      </form>
+
+      <!-- ===== Keamanan ===== -->
+      <section aria-labelledby="sec-title" class="animate-rise mt-6 rounded-3xl border border-ink-200 bg-white p-6 shadow-soft sm:p-8" style="animation-delay:200ms">
+        <h2 id="sec-title" class="flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-ink-900">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-100 text-brand-700"><i data-lucide="lock" class="h-5 w-5"></i></span> Keamanan Akun
+        </h2>
+        <div class="mt-6 flex flex-col gap-4 rounded-2xl bg-ink-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="font-bold text-ink-900">Password</p>
+            <p class="mt-0.5 text-ink-600">Reset lewat halaman "Lupa Password".</p>
+          </div>
+          <a href="lupa-password.html" class="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-ink-200 bg-white px-5 py-2.5 text-sm font-bold text-ink-800 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Reset Password <i data-lucide="arrow-right" class="h-4 w-4"></i></a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Notifikasi -->
+  <div id="toast" role="status" aria-live="polite" class="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2"></div>
+
+  <footer class="border-t border-ink-200 bg-white">
+    <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8">
+      <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+        <div>
+          <a href="index.html" class="flex items-center gap-2 text-xl font-extrabold tracking-tight text-ink-900">
+            <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white"><i data-lucide="code-xml" class="h-[18px] w-[18px]"></i></span>
+            Webkita
+          </a>
+          <p class="mt-4 max-w-[15rem] text-sm leading-relaxed text-ink-600">Hubungkan bisnis Anda dengan developer terbaik.</p>
+          <a href="#" aria-label="Webkita di GitHub" class="mt-4 inline-grid h-10 w-10 place-items-center rounded-full text-ink-600 transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-400"><i data-lucide="github" class="h-5 w-5"></i></a>
+        </div>
+        <nav aria-label="Perusahaan">
+          <h3 class="text-sm font-bold text-ink-900">Perusahaan</h3>
+          <ul class="mt-4 space-y-3 text-sm text-ink-600">
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Tentang Kami</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Karir</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Blog</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Kontak</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Layanan">
+          <h3 class="text-sm font-bold text-ink-900">Layanan</h3>
+          <ul class="mt-4 space-y-3 text-sm text-ink-600">
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Developer</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">E-commerce</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Design</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Konsultasi</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Dukungan">
+          <h3 class="text-sm font-bold text-ink-900">Dukungan</h3>
+          <ul class="mt-4 space-y-3 text-sm text-ink-600">
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Pusat Bantuan</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">FAQ</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Syarat &amp; Ketentuan</a></li>
+            <li><a href="#" class="transition hover:text-brand-700 hover:underline">Kebijakan Privasi</a></li>
+          </ul>
+        </nav>
+        <div>
+          <h3 class="text-sm font-bold text-ink-900">Newsletter</h3>
+          <p class="mt-4 text-sm text-ink-600">Dapatkan update terbaru dari kami.</p>
+          <form class="mt-4 flex" action="#" method="post" onsubmit="return false">
+            <label for="newsletter-email" class="sr-only">Email Anda</label>
+            <input id="newsletter-email" type="email" required placeholder="Email Anda" autocomplete="email" class="min-w-0 flex-1 rounded-l-xl border border-r-0 border-ink-300 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-500 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-300" />
+            <button type="submit" class="rounded-r-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400">Kirim</button>
+          </form>
+        </div>
+      </div>
+      <div class="mt-12 border-t border-ink-200 pt-6 text-center text-sm text-ink-600">&copy; 2026 Webkita. Semua hak dilindungi.</div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script>
+    (function () {
+      var ICON_ATTRS = { 'aria-hidden': 'true', focusable: 'false' };
+      function icons() { if (window.lucide) lucide.createIcons({ attrs: ICON_ATTRS }); }
+      function $(id) { return document.getElementById(id); }
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      /* ====== DATA AKUN (contoh) — di Laravel isi dari auth()->user() ====== */
+      var user = { username: 'demo', email: 'demo@webkita.local', first_name: 'Demo', last_name: 'WebKita', phone: '', joined: '20 Oktober 2026', newsletter: false };
+
+      var form = $('profile-form'), editBtn = $('btn-edit'), cancelBtn = $('btn-cancel'), saveBtn = $('btn-save');
+      var EDIT = ['username', 'first_name', 'last_name', 'phone'];
+
+      function render() {
+        document.querySelectorAll('[data-view]').forEach(function (el) { el.textContent = user[el.dataset.view] || '-'; });
+        var full = (user.first_name + ' ' + user.last_name).trim() || user.username;
+        $('hdr-name').textContent = full; $('hdr-user').textContent = '@' + user.username;
+        var dd = document.querySelector('#user-menu p.font-bold'); if (dd) dd.textContent = user.first_name || user.username;
+        $('f-newsletter').checked = user.newsletter;
+      }
+      function fill() { EDIT.forEach(function (k) { $('f-' + k).value = user[k]; setErr(k, ''); }); $('f-newsletter').checked = user.newsletter; }
+
+      function setErr(k, msg) {
+        var el = $('f-' + k), er = $('f-' + k + '-err');
+        if (msg) { el.setAttribute('aria-invalid', 'true'); er.querySelector('span').textContent = msg; er.classList.remove('hidden'); er.classList.add('flex'); }
+        else { el.removeAttribute('aria-invalid'); er.classList.add('hidden'); er.classList.remove('flex'); }
+      }
+      var RULES = {
+        username: function (v) { if (!v) return 'Username wajib diisi.'; if (!/^[a-zA-Z0-9._]{3,30}$/.test(v)) return 'Gunakan 3-30 karakter: huruf, angka, titik, atau garis bawah.'; return ''; },
+        first_name: function (v) { return v.length > 50 ? 'Maksimal 50 karakter.' : ''; },
+        last_name: function (v) { return v.length > 50 ? 'Maksimal 50 karakter.' : ''; },
+        phone: function (v) { v = v.replace(/[\s-]/g, ''); if (!v) return ''; return /^(\+62|62|0)8[1-9][0-9]{6,11}$/.test(v) ? '' : 'Gunakan nomor Indonesia, contoh 08123456789.'; }
+      };
+      EDIT.forEach(function (k) {
+        $('f-' + k).addEventListener('input', function () { if (this.hasAttribute('aria-invalid')) setErr(k, RULES[k](this.value.trim())); });
+        $('f-' + k).addEventListener('blur', function () { if (this.value) setErr(k, RULES[k](this.value.trim())); });
+      });
+
+      function setEditing(on, focusTarget) {
+        form.setAttribute('data-editing', String(on));
+        editBtn.hidden = on;
+        $('f-newsletter').disabled = !on;
+        if (on) { fill(); $('f-username').focus(); } else { render(); if (focusTarget !== false) editBtn.focus(); }
+      }
+      editBtn.addEventListener('click', function () { setEditing(true); });
+      cancelBtn.addEventListener('click', function () { setEditing(false); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && form.getAttribute('data-editing') === 'true' && !$('user-menu').offsetParent) setEditing(false);
+      });
+
+      function toast(msg) {
+        var t = $('toast');
+        t.innerHTML = '<div class="toast-in pointer-events-auto flex items-center gap-2.5 rounded-xl bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-lift"><i data-lucide="circle-check" class="h-5 w-5 text-[#86EFAC]"></i>' + msg + '</div>';
+        icons(); clearTimeout(toast.t); toast.t = setTimeout(function () { t.innerHTML = ''; }, 3800);
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var bad = null;
+        EDIT.forEach(function (k) { var m = RULES[k]($('f-' + k).value.trim()); setErr(k, m); if (m && !bad) bad = k; });
+        if (bad) { $('f-' + bad).focus(); form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake'); return; }
+
+        saveBtn.disabled = true; $('spinner').classList.remove('hidden'); $('save-icon').classList.add('hidden'); $('save-label').textContent = 'Menyimpan…';
+        // Mode demo: aktif selama action="#". Di Laravel isi action dengan route, maka form terkirim normal.
+        function done() {
+          EDIT.forEach(function (k) { user[k] = $('f-' + k).value.trim(); }); user.newsletter = $('f-newsletter').checked;
+          saveBtn.disabled = false; $('spinner').classList.add('hidden'); $('save-icon').classList.remove('hidden'); $('save-label').textContent = 'Simpan Perubahan';
+          setEditing(false); toast('Perubahan profil disimpan.');
+        }
+        if (form.getAttribute('action') === '#') setTimeout(done, 900); else form.submit();
+      });
+
+      render(); setEditing(false, false); icons();
+
+      /* ----- navbar ----- */
+      var nav = $('navbar');
+      function onScroll() { var s = window.scrollY > 8; nav.classList.toggle('shadow-soft', s); nav.classList.toggle('border-ink-200', s); nav.classList.toggle('border-transparent', !s); }
+      onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+      var mb = $('menu-btn'), mm = $('mobile-menu');
+      function setMenu(o) { mm.classList.toggle('hidden', !o); mb.setAttribute('aria-expanded', String(o)); mb.setAttribute('aria-label', o ? 'Tutup menu' : 'Buka menu'); mb.innerHTML = '<i data-lucide="' + (o ? 'x' : 'menu') + '" class="h-6 w-6"></i>'; icons(); }
+      mb.addEventListener('click', function () { setMenu(mb.getAttribute('aria-expanded') !== 'true'); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+    })();
+  </script>
+
+  <script>
+    /* Menu akun (dropdown) */
+    (function () {
+      var wrap = document.getElementById('user-wrap'), btn = document.getElementById('user-btn'), menu = document.getElementById('user-menu');
+      var items = function () { return Array.prototype.slice.call(menu.querySelectorAll('[role=menuitem]')); };
+      function setOpen(o, focusFirst) {
+        menu.classList.toggle('hidden', !o);
+        btn.setAttribute('aria-expanded', String(o));
+        if (o) { menu.classList.remove('menu-in'); void menu.offsetWidth; menu.classList.add('menu-in'); if (focusFirst) items()[0].focus(); }
+      }
+      btn.addEventListener('click', function () { setOpen(menu.classList.contains('hidden'), false); });
+      btn.addEventListener('keydown', function (e) { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true, true); } });
+      document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) setOpen(false); });
+      document.addEventListener('keydown', function (e) {
+        if (menu.classList.contains('hidden')) return;
+        var list = items(), i = list.indexOf(document.activeElement);
+        if (e.key === 'Escape') { setOpen(false); btn.focus(); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); list[(i + 1) % list.length].focus(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); list[(i - 1 + list.length) % list.length].focus(); }
+        else if (e.key === 'Tab') { setOpen(false); }
+      });
+    })();
+  </script>
+</body>
+</html>

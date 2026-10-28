@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth.middleware'
 import { createSupabase } from '../lib/supabase'
-import { createTransaction, handleNotification } from '../services/payment.service'
+import { createTransaction, getInvoice, handleNotification } from '../services/payment.service'
+import { errorStatus } from '../utils/http'
 
 type Env = {
   SUPABASE_URL: string
@@ -74,7 +75,6 @@ paymentRoute.post('/create/:projectId', authMiddleware, async (c) => {
     const result = await createTransaction(supabase, {
       projectId,
       userId: user.user_id,
-      amount: body.amount,
       customerName: body.customerName,
       customerEmail: body.customerEmail,
       customerPhone: body.customerPhone,
@@ -84,7 +84,7 @@ paymentRoute.post('/create/:projectId', authMiddleware, async (c) => {
 
     return c.json({ status: 'success', data: result }, 201)
   } catch (err: any) {
-    return c.json({ status: 'error', message: err?.message || 'Gagal membuat transaksi' }, 500)
+    return c.json({ status: 'error', message: err?.message || 'Gagal membuat transaksi' }, errorStatus(err))
   }
 })
 
@@ -98,7 +98,7 @@ paymentRoute.post('/notification', async (c) => {
 
     return c.json({ status: 'success' })
   } catch (err: any) {
-    return c.json({ status: 'error', message: err?.message }, 500)
+    return c.json({ status: 'error', message: err?.message }, errorStatus(err))
   }
 })
 
@@ -132,5 +132,18 @@ paymentRoute.get('/project/:projectId', authMiddleware, async (c) => {
     return c.json({ status: 'success', isPaid: !!data })
   } catch (err: any) {
     return c.json({ status: 'error', message: err?.message }, 500)
+  }
+})
+
+// GET /payment/invoice/:projectId — data invoice (pemilik proyek atau admin/developer)
+paymentRoute.get('/invoice/:projectId', authMiddleware, async (c) => {
+  try {
+    const projectId = Number(c.req.param('projectId'))
+    const user = c.get('user')
+    const supabase = createSupabase(c.env.SUPABASE_URL, c.env.SUPABASE_SERVICE_ROLE_KEY)
+    const data = await getInvoice(supabase, projectId, user)
+    return c.json({ status: 'success', data })
+  } catch (err: any) {
+    return c.json({ status: 'error', message: err?.message || 'Gagal mengambil invoice' }, errorStatus(err))
   }
 })

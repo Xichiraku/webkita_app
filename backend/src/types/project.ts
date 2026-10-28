@@ -19,6 +19,10 @@ export interface Project {
   contact_phone: string
   additional_notes: string
   status: ProjectStatus
+  plan_price_range: string | null
+  reject_reason: string | null
+  invoice_number: string | null
+  invoice_issued_at: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -53,4 +57,6 @@ export interface CreateProjectRequest {
 
 export interface UpdateProjectStatusRequest {
   status: ProjectStatus
+  /** Alasan penolakan (hanya dipakai bila status = rejected) */
+  reason?: string
 }
